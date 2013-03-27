@@ -12,6 +12,8 @@ public:
   virtual gfx::NativeView GetNativeView() const = 0;
 
   virtual void ShowDevTools() = 0;
+  virtual void CloseDevTools() = 0;
+  virtual bool SetDockSide(const std::string& side) = 0;
 };
 
 }
