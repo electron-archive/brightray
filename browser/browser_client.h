@@ -11,6 +11,7 @@ namespace brightray {
 
 class BrowserContext;
 class BrowserMainParts;
+class NotificationPresenter;
 
 class BrowserClient : public content::ContentBrowserClient {
 public:
@@ -19,6 +20,7 @@ public:
 
   BrowserContext* browser_context();
   BrowserMainParts* browser_main_parts() { return browser_main_parts_; }
+  NotificationPresenter* notification_presenter();
 
 protected:
   // Subclasses should override this to provide their own BrowserMainParts implementation. The
@@ -28,8 +30,18 @@ protected:
 private:
   virtual content::BrowserMainParts* CreateBrowserMainParts(const content::MainFunctionParams&) OVERRIDE;
   virtual net::URLRequestContextGetter* CreateRequestContext(content::BrowserContext*, content::ProtocolHandlerMap*) OVERRIDE;
+  virtual void ShowDesktopNotification(
+      const content::ShowDesktopNotificationHostMsgParams&,
+      int render_process_id,
+      int render_view_id,
+      bool worker) OVERRIDE;
+  virtual void CancelDesktopNotification(
+      int render_process_id,
+      int render_view_id,
+      int notification_id) OVERRIDE;
 
   BrowserMainParts* browser_main_parts_;
+  scoped_ptr<NotificationPresenter> notification_presenter_;
 
   DISALLOW_COPY_AND_ASSIGN(BrowserClient);
 };
