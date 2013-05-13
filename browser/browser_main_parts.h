@@ -30,6 +30,14 @@ protected:
   // takes ownership of the returned object.
   virtual BrowserContext* CreateBrowserContext();
 
+  // Subclasses should override this if they want to set a fixed remote debugging port for the
+  // devtools. By default it returns 0, which means a random port would be picked.
+  //
+  // One important reason of why you would override this is that the devtools's settings can only
+  // be persitent when you provide a fixed remote debugging port, because the settings are stored
+  // in localStorage, which uses 'address:port' to mark each storage cell.
+  virtual int GetRemoteDebuggingPort();
+
 #if defined(OS_MACOSX)
   virtual void PreMainMessageLoopStart() OVERRIDE;
 #endif
