@@ -80,8 +80,9 @@
           },
         },
         'conditions': [
-          ['OS=="win"', {
+          ['OS!="mac"', {
             'defines': [
+              'TOOLKIT_VIEWS',
               'USE_AURA',
               'VIEWS_IMPLEMENTATION',
               'WEBVIEW_IMPLEMENTATION',
@@ -179,6 +180,11 @@
         'sources/': [
           ['exclude', '/mac/'],
           ['exclude', '_mac\.(mm|h)$'],
+        ],
+      }, {
+        'sources/': [
+          ['exclude', '/views/'],
+          ['exclude', '_views\.(cc|h)$'],
         ],
       }],
       ['OS!="win"', {
