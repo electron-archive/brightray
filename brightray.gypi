@@ -99,6 +99,7 @@
           ['OS not in ["mac", "win"]', {
             'defines': [
               'USE_X11',
+              '__STRICT_ANSI__'
             ],
           }],
         ],
