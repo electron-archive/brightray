@@ -38,7 +38,7 @@ def download_libchromiumcontent(commit, url):
     mkdir_p(DOWNLOAD_DIR)
     download = os.path.join(VENDOR_DIR, 'libchromiumcontent', 'script',
                             'download')
-    return subprocess.call([sys.executable, download, '-f', '-c', commit, url,
+    return subprocess.call([sys.executable, download, '-c', commit, url,
                             os.path.join(DOWNLOAD_DIR, 'libchromiumcontent')])
 
 
