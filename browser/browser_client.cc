@@ -12,7 +12,9 @@
 
 #include "base/base_paths.h"
 #include "base/path_service.h"
+#include "base/command_line.h"
 #include "content/public/common/url_constants.h"
+#include "content/public/common/content_switches.h"
 
 namespace brightray {
 
@@ -95,6 +97,27 @@ base::FilePath BrowserClient::GetDefaultDownloadDirectory() {
     path = path.Append(FILE_PATH_LITERAL("Downloads"));
 
   return path;
+}
+
+void BrowserClient::AllowCertificateError(int render_process_id,
+                                          int render_frame_id,
+                                          int cert_error,
+                                          const net::SSLInfo& ssl_info,
+                                          const GURL& request_url,
+                                          content::ResourceType resource_type,
+                                          bool overridable,
+                                          bool strict_enforcement,
+                                          bool expired_previous_decision,
+                                          const base::Callback<void(bool)>& callback,
+                                          content::CertificateRequestResultType* result) {
+  LOG(WARNING) << "AllowCertificateError : " << request_url;
+  base::CommandLine* cmd_line = base::CommandLine::ForCurrentProcess();
+  if (cmd_line->HasSwitch(switches::kIgnoreCertificateErrors)) {
+    *result = content::CERTIFICATE_REQUEST_RESULT_TYPE_CONTINUE;
+  } else {
+    *result = content::CERTIFICATE_REQUEST_RESULT_TYPE_DENY;
+  }
+  return;
 }
 
 content::DevToolsManagerDelegate* BrowserClient::GetDevToolsManagerDelegate() {

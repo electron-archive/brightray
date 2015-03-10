@@ -6,6 +6,7 @@
 #define BRIGHTRAY_BROWSER_BROWSER_CLIENT_H_
 
 #include "content/public/browser/content_browser_client.h"
+#include "content/public/common/resource_type.h"
 
 namespace brightray {
 
@@ -52,6 +53,17 @@ class BrowserClient : public content::ContentBrowserClient {
       std::vector<std::string>* additional_schemes) override;
   base::FilePath GetDefaultDownloadDirectory() override;
   content::DevToolsManagerDelegate* GetDevToolsManagerDelegate() override;
+  void AllowCertificateError(int render_process_id,
+                             int render_frame_id,
+                             int cert_error,
+                             const net::SSLInfo& ssl_info,
+                             const GURL& request_url,
+                             content::ResourceType resource_type,
+                             bool override,
+                             bool strict_enforcement,
+                             bool expired_previous_decision,
+                             const base::Callback<void(bool)>& callback,
+                             content::CertificateRequestResultType* result) override;
 
   BrowserMainParts* browser_main_parts_;
   scoped_ptr<NotificationPresenter> notification_presenter_;
