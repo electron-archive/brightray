@@ -299,6 +299,11 @@ void InspectableWebContentsImpl::HandleMessageFromDevToolsFrontend(const std::st
     return;
   }
 
+  if (method == "loadCompleted") {
+    devtools_web_contents()->GetMainFrame()->ExecuteJavaScript(
+        base::UTF8ToUTF16("DevToolsAPI.setUseSoftMenu(true);"));
+  }
+
   std::string error = embedder_message_dispatcher_->Dispatch(method, &params);
   if (id) {
     std::string ack = base::StringPrintf(
