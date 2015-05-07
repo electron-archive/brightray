@@ -5,6 +5,8 @@
 #include "browser/network_delegate.h"
 
 #include "net/base/net_errors.h"
+#include "net/http/http_response_headers.h"
+#include "net/url_request/url_request.h"
 
 namespace brightray {
 
@@ -53,6 +55,9 @@ int NetworkDelegate::OnHeadersReceived(
     const net::HttpResponseHeaders* original_response_headers,
     scoped_refptr<net::HttpResponseHeaders>* override_response_headers,
     GURL* allowed_unsafe_redirect_url) {
+  std::string headers;
+  original_response_headers->GetNormalizedHeaders(&headers);
+  headers_map_[request->url()] = headers;
   return net::OK;
 }
 
@@ -117,6 +122,10 @@ bool NetworkDelegate::OnCancelURLRequestWithPolicyViolatingReferrerHeader(
     const GURL& target_url,
     const GURL& referrer_url) const {
   return false;
+}
+
+std::string NetworkDelegate::GetResponseHeaders(const GURL& url) {
+  return headers_map_[url];
 }
 
 }  // namespace brightray

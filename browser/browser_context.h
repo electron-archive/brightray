@@ -8,6 +8,7 @@
 #include "browser/url_request_context_getter.h"
 
 #include "content/public/browser/browser_context.h"
+#include "browser/network_delegate.h"
 
 class PrefRegistrySimple;
 class PrefService;
@@ -28,6 +29,10 @@ class BrowserContext : public content::BrowserContext,
 
   net::URLRequestContextGetter* url_request_context_getter() const {
     return url_request_getter_.get();
+  }
+
+  NetworkDelegate* GetNetworkDelegate() const {
+    return network_delegate_.get();
   }
 
   PrefService* prefs() { return prefs_.get(); }
@@ -65,6 +70,7 @@ class BrowserContext : public content::BrowserContext,
   content::SSLHostStateDelegate* GetSSLHostStateDelegate() override;
 
   base::FilePath path_;
+  scoped_ptr<NetworkDelegate> network_delegate_;  
   scoped_ptr<ResourceContext> resource_context_;
   scoped_refptr<URLRequestContextGetter> url_request_getter_;
   scoped_ptr<PrefService> prefs_;
