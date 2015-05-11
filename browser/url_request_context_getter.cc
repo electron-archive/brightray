@@ -146,8 +146,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
   auto& command_line = *base::CommandLine::ForCurrentProcess();
   if (!url_request_context_.get()) {
     url_request_context_.reset(new net::URLRequestContext);
-    network_delegate_.reset(delegate_->CreateNetworkDelegate());
-    url_request_context_->set_network_delegate(network_delegate_.get());
+    url_request_context_->set_network_delegate(delegate_->CreateNetworkDelegate());
 
     storage_.reset(new net::URLRequestContextStorage(url_request_context_.get()));
     auto cookie_config = content::CookieStoreConfig(

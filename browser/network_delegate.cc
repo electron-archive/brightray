@@ -62,14 +62,14 @@ int NetworkDelegate::OnHeadersReceived(
 }
 
 void NetworkDelegate::OnBeforeRedirect(net::URLRequest* request,
-                                            const GURL& new_location) {
+                                       const GURL& new_location) {
 }
 
 void NetworkDelegate::OnResponseStarted(net::URLRequest* request) {
 }
 
 void NetworkDelegate::OnRawBytesRead(const net::URLRequest& request,
-                                          int bytes_read) {
+                                     int bytes_read) {
 }
 
 void NetworkDelegate::OnCompleted(net::URLRequest* request, bool started) {
@@ -91,18 +91,18 @@ NetworkDelegate::AuthRequiredResponse NetworkDelegate::OnAuthRequired(
 }
 
 bool NetworkDelegate::OnCanGetCookies(const net::URLRequest& request,
-                                           const net::CookieList& cookie_list) {
+                                      const net::CookieList& cookie_list) {
   return true;
 }
 
 bool NetworkDelegate::OnCanSetCookie(const net::URLRequest& request,
-                                          const std::string& cookie_line,
-                                          net::CookieOptions* options) {
+                                     const std::string& cookie_line,
+                                     net::CookieOptions* options) {
   return true;
 }
 
 bool NetworkDelegate::OnCanAccessFile(const net::URLRequest& request,
-                                           const base::FilePath& path) const {
+                                      const base::FilePath& path) const {
   return true;
 }
 
