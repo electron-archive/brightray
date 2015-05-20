@@ -5,6 +5,8 @@
 #include "browser/network_delegate.h"
 
 #include "net/base/net_errors.h"
+#include "net/http/http_response_headers.h"
+#include "net/url_request/url_request.h"
 
 namespace brightray {
 
@@ -53,18 +55,21 @@ int NetworkDelegate::OnHeadersReceived(
     const net::HttpResponseHeaders* original_response_headers,
     scoped_refptr<net::HttpResponseHeaders>* override_response_headers,
     GURL* allowed_unsafe_redirect_url) {
+  std::string headers;
+  original_response_headers->GetNormalizedHeaders(&headers);
+  headers_map_[request->url()] = headers;
   return net::OK;
 }
 
 void NetworkDelegate::OnBeforeRedirect(net::URLRequest* request,
-                                            const GURL& new_location) {
+                                       const GURL& new_location) {
 }
 
 void NetworkDelegate::OnResponseStarted(net::URLRequest* request) {
 }
 
 void NetworkDelegate::OnRawBytesRead(const net::URLRequest& request,
-                                          int bytes_read) {
+                                     int bytes_read) {
 }
 
 void NetworkDelegate::OnCompleted(net::URLRequest* request, bool started) {
@@ -86,18 +91,18 @@ NetworkDelegate::AuthRequiredResponse NetworkDelegate::OnAuthRequired(
 }
 
 bool NetworkDelegate::OnCanGetCookies(const net::URLRequest& request,
-                                           const net::CookieList& cookie_list) {
+                                      const net::CookieList& cookie_list) {
   return true;
 }
 
 bool NetworkDelegate::OnCanSetCookie(const net::URLRequest& request,
-                                          const std::string& cookie_line,
-                                          net::CookieOptions* options) {
+                                     const std::string& cookie_line,
+                                     net::CookieOptions* options) {
   return true;
 }
 
 bool NetworkDelegate::OnCanAccessFile(const net::URLRequest& request,
-                                           const base::FilePath& path) const {
+                                      const base::FilePath& path) const {
   return true;
 }
 
@@ -117,6 +122,10 @@ bool NetworkDelegate::OnCancelURLRequestWithPolicyViolatingReferrerHeader(
     const GURL& target_url,
     const GURL& referrer_url) const {
   return false;
+}
+
+std::string NetworkDelegate::GetResponseHeaders(const GURL& url) {
+  return headers_map_[url];
 }
 
 }  // namespace brightray

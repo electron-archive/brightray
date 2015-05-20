@@ -5,6 +5,9 @@
 #ifndef BRIGHTRAY_BROWSER_NETWORK_DELEGATE_H_
 #define BRIGHTRAY_BROWSER_NETWORK_DELEGATE_H_
 
+#include <map>
+#include <string>
+
 #include "net/base/network_delegate.h"
 
 namespace brightray {
@@ -13,6 +16,8 @@ class NetworkDelegate : public net::NetworkDelegate {
  public:
   NetworkDelegate();
   virtual ~NetworkDelegate();
+
+  std::string GetResponseHeaders(const GURL& url);
 
  protected:
   int OnBeforeURLRequest(net::URLRequest* request,
@@ -68,6 +73,7 @@ class NetworkDelegate : public net::NetworkDelegate {
       const GURL& referrer_url) const override;
 
  private:
+  std::map<GURL,std::string> headers_map_;   
   DISALLOW_COPY_AND_ASSIGN(NetworkDelegate);
 };
 
