@@ -22,7 +22,8 @@ const char kIgnoreConnectionsLimit[] = "ignore-connections-limit";
 
 }  // namespace
 
-NetworkDelegate::NetworkDelegate() {
+NetworkDelegate::NetworkDelegate(Delegate* delegate)
+    : delegate_(delegate) {
   auto command_line = base::CommandLine::ForCurrentProcess();
   if (command_line->HasSwitch(kIgnoreConnectionsLimit)) {
     std::string value = command_line->GetSwitchValueASCII(kIgnoreConnectionsLimit);
@@ -31,6 +32,22 @@ NetworkDelegate::NetworkDelegate() {
 }
 
 NetworkDelegate::~NetworkDelegate() {
+}
+
+int NetworkDelegate::Delegate::BeforeSendHeaders(
+    net::URLRequest* request,
+    const net::CompletionCallback& callback,
+    net::HttpRequestHeaders* headers) {
+  return net::OK;
+}
+
+NetworkDelegate::AuthRequiredResponse
+    NetworkDelegate::Delegate::AuthRequired(
+        net::URLRequest* request,
+        const net::AuthChallengeInfo& auth_info,
+        const AuthCallback& callback,
+        net::AuthCredentials* credentials) {
+  return AUTH_REQUIRED_RESPONSE_NO_ACTION;
 }
 
 int NetworkDelegate::OnBeforeURLRequest(
@@ -62,7 +79,10 @@ int NetworkDelegate::OnBeforeSendHeaders(
     net::URLRequest* request,
     const net::CompletionCallback& callback,
     net::HttpRequestHeaders* headers) {
-  return net::OK;
+  int rv = net::OK;
+  if (delegate_)
+    rv = delegate_->BeforeSendHeaders(request, callback, headers);
+  return rv;
 }
 
 void NetworkDelegate::OnBeforeSendProxyHeaders(net::URLRequest* request,
@@ -110,7 +130,10 @@ NetworkDelegate::AuthRequiredResponse NetworkDelegate::OnAuthRequired(
     const net::AuthChallengeInfo& auth_info,
     const AuthCallback& callback,
     net::AuthCredentials* credentials) {
-  return AUTH_REQUIRED_RESPONSE_NO_ACTION;
+  auto rv = AUTH_REQUIRED_RESPONSE_NO_ACTION;
+  if (delegate_)
+    rv = delegate_->AuthRequired(request, auth_info, callback, credentials);
+  return rv;
 }
 
 bool NetworkDelegate::OnCanGetCookies(const net::URLRequest& request,

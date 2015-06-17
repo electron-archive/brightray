@@ -14,7 +14,22 @@ namespace brightray {
 
 class NetworkDelegate : public net::NetworkDelegate {
  public:
-  NetworkDelegate();
+  class Delegate {
+    public:
+     Delegate() {}
+     virtual ~Delegate() {}
+
+     virtual int BeforeSendHeaders(net::URLRequest* request,
+                                   const net::CompletionCallback& callback,
+                                   net::HttpRequestHeaders* headers);
+     virtual AuthRequiredResponse AuthRequired(
+        net::URLRequest* request,
+        const net::AuthChallengeInfo& auth_info,
+        const AuthCallback& callback,
+        net::AuthCredentials* credentials);
+  };
+
+  NetworkDelegate(Delegate* delegate);
   virtual ~NetworkDelegate();
 
  protected:
@@ -73,7 +88,7 @@ class NetworkDelegate : public net::NetworkDelegate {
 
  private:
   std::vector<std::string> ignore_connections_limit_domains_;
-
+  Delegate* delegate_;
   DISALLOW_COPY_AND_ASSIGN(NetworkDelegate);
 };
 

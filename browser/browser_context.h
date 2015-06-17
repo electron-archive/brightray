@@ -5,6 +5,7 @@
 #ifndef BRIGHTRAY_BROWSER_BROWSER_CONTEXT_H_
 #define BRIGHTRAY_BROWSER_BROWSER_CONTEXT_H_
 
+#include "browser/network_delegate.h"
 #include "browser/permission_manager.h"
 #include "browser/url_request_context_getter.h"
 
@@ -24,6 +25,10 @@ class BrowserContext : public content::BrowserContext,
   ~BrowserContext();
 
   virtual void Initialize();
+
+  // Subclasses should override this to receive network notifications.
+  virtual brightray::NetworkDelegate::Delegate*
+      CreateBrightrayNetworkDelegate() { return nullptr; }
 
   net::URLRequestContextGetter* CreateRequestContext(
       content::ProtocolHandlerMap* protocol_handlers,
