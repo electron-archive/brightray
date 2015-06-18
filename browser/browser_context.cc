@@ -6,7 +6,6 @@
 
 #include "browser/brightray_paths.h"
 #include "browser/inspectable_web_contents_impl.h"
-#include "browser/network_delegate.h"
 #include "browser/permission_manager.h"
 #include "common/application_info.h"
 
@@ -115,7 +114,7 @@ net::URLRequestContextGetter* BrowserContext::CreateRequestContext(
 }
 
 net::NetworkDelegate* BrowserContext::CreateNetworkDelegate() {
-  return new NetworkDelegate;
+  return new NetworkDelegate(CreateBrightrayNetworkDelegate());
 }
 
 base::FilePath BrowserContext::GetPath() const {
