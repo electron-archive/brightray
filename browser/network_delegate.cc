@@ -46,6 +46,15 @@ int NetworkDelegate::OnBeforeURLRequest(
     }
   }
 
+  // Canonicalise non-standard schemes. 
+  if (!request->url().IsStandard()) {
+    std::string url = request->url().spec();
+    url::Parsed parsed_url;
+    url::ParseFileURL(url.c_str(), url.size(), &parsed_url);
+    if (!parsed_url.path.is_valid())
+      *new_url = GURL(url + "/");
+  }
+
   return net::OK;
 }
 
