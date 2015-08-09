@@ -49,6 +49,12 @@ class BrowserContext : public content::BrowserContext,
       NetLog* net_log,
       content::ProtocolHandlerMap* protocol_handlers,
       content::URLRequestInterceptorScopedVector protocol_interceptors);
+  net::URLRequestContextGetter* CreateRequestContextForStoragePartition(
+      NetLog* net_log,
+      const base::FilePath& partition_path,
+      bool in_memory,
+      content::ProtocolHandlerMap* protocol_handlers,
+      content::URLRequestInterceptorScopedVector protocol_interceptors);
 
   net::URLRequestContextGetter* url_request_context_getter() const {
     return url_request_getter_.get();

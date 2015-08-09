@@ -37,6 +37,12 @@ class BrowserClient : public content::ContentBrowserClient {
       content::BrowserContext* browser_context,
       content::ProtocolHandlerMap* protocol_handlers,
       content::URLRequestInterceptorScopedVector protocol_interceptors) override;
+  net::URLRequestContextGetter* CreateRequestContextForStoragePartition(
+      content::BrowserContext* browser_context,
+      const base::FilePath& partition_path,
+      bool in_memory,
+      content::ProtocolHandlerMap* protocol_handlers,
+      content::URLRequestInterceptorScopedVector protocol_interceptors) override;
   content::BrowserMainParts* CreateBrowserMainParts(
       const content::MainFunctionParams&) override;
   content::MediaObserver* GetMediaObserver() override;

@@ -60,6 +60,20 @@ net::URLRequestContextGetter* BrowserClient::CreateRequestContext(
                                        protocol_interceptors.Pass());
 }
 
+net::URLRequestContextGetter* BrowserClient::CreateRequestContextForStoragePartition(
+    content::BrowserContext* browser_context,
+    const base::FilePath& partition_path,
+    bool in_memory,
+    content::ProtocolHandlerMap* protocol_handlers,
+    content::URLRequestInterceptorScopedVector protocol_interceptors) {
+  auto context = static_cast<BrowserContext*>(browser_context);
+  return context->CreateRequestContextForStoragePartition(static_cast<NetLog*>(GetNetLog()),
+                                                          partition_path,
+                                                          in_memory,
+                                                          protocol_handlers,
+                                                          protocol_interceptors.Pass());
+}
+
 content::MediaObserver* BrowserClient::GetMediaObserver() {
   return MediaCaptureDevicesDispatcher::GetInstance();
 }

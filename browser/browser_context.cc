@@ -108,12 +108,33 @@ net::URLRequestContextGetter* BrowserContext::CreateRequestContext(
       this,
       net_log,
       GetPath(),
+      false,
       BrowserThread::UnsafeGetMessageLoopForThread(BrowserThread::IO),
       BrowserThread::UnsafeGetMessageLoopForThread(BrowserThread::FILE),
       protocol_handlers,
       protocol_interceptors.Pass());
   resource_context_->set_url_request_context_getter(url_request_getter_.get());
   return url_request_getter_.get();
+}
+
+net::URLRequestContextGetter* BrowserContext::CreateRequestContextForStoragePartition(
+    NetLog* net_log,
+    const base::FilePath& partition_path,
+    bool in_memory,
+    content::ProtocolHandlerMap* protocol_handlers,
+    content::URLRequestInterceptorScopedVector protocol_interceptors) {
+  CHECK(partition_path != GetPath());
+
+  auto context = new URLRequestContextGetter(
+      this,
+      net_log,
+      partition_path,
+      in_memory,
+      BrowserThread::UnsafeGetMessageLoopForThread(BrowserThread::IO),
+      BrowserThread::UnsafeGetMessageLoopForThread(BrowserThread::FILE),
+      protocol_handlers,
+      protocol_interceptors.Pass());
+  return context;
 }
 
 net::NetworkDelegate* BrowserContext::CreateNetworkDelegate() {
@@ -156,7 +177,9 @@ net::URLRequestContextGetter*
     BrowserContext::GetMediaRequestContextForStoragePartition(
         const base::FilePath& partition_path,
         bool in_memory) {
-  return GetRequestContext();
+  // Since we have already created URLRequestContext to be used for the partition,
+  // this can be NULL.
+  return nullptr;
 }
 
 content::ResourceContext* BrowserContext::GetResourceContext() {
