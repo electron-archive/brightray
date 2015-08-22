@@ -20,6 +20,7 @@
 #include "net/cert/cert_verifier.h"
 #include "net/cookies/cookie_monster.h"
 #include "net/dns/mapped_host_resolver.h"
+#include "net/ftp/ftp_network_layer.h"
 #include "net/http/http_auth_handler_factory.h"
 #include "net/http/http_server_properties_impl.h"
 #include "net/log/net_log.h"
@@ -33,6 +34,7 @@
 #include "net/ssl/ssl_config_service_defaults.h"
 #include "net/url_request/data_protocol_handler.h"
 #include "net/url_request/file_protocol_handler.h"
+#include "net/url_request/ftp_protocol_handler.h"
 #include "net/url_request/static_http_user_agent_settings.h"
 #include "net/url_request/url_request_context.h"
 #include "net/url_request/url_request_context_storage.h"
@@ -83,7 +85,8 @@ std::string URLRequestContextGetter::Delegate::GetUserAgent() {
 
 net::URLRequestJobFactory* URLRequestContextGetter::Delegate::CreateURLRequestJobFactory(
     content::ProtocolHandlerMap* protocol_handlers,
-    content::URLRequestInterceptorScopedVector* protocol_interceptors) {
+    content::URLRequestInterceptorScopedVector* protocol_interceptors,
+    net::FtpTransactionFactory* ftp_transaction_factory) {
   scoped_ptr<net::URLRequestJobFactoryImpl> job_factory(new net::URLRequestJobFactoryImpl);
 
   for (auto it = protocol_handlers->begin(); it != protocol_handlers->end(); ++it)
@@ -94,6 +97,8 @@ net::URLRequestJobFactory* URLRequestContextGetter::Delegate::CreateURLRequestJo
   job_factory->SetProtocolHandler(url::kFileScheme, new net::FileProtocolHandler(
       BrowserThread::GetBlockingPool()->GetTaskRunnerWithShutdownBehavior(
           base::SequencedWorkerPool::SKIP_ON_SHUTDOWN)));
+  job_factory->SetProtocolHandler(url::kFtpScheme, new net::FtpProtocolHandler(
+      ftp_transaction_factory));
 
   // Set up interceptors in the reverse order.
   scoped_ptr<net::URLRequestJobFactory> top_job_factory = job_factory.Pass();
@@ -204,11 +209,13 @@ class IsolatedRequestContextFactory : public URLRequestContextGetterFactory {
     net::HttpNetworkSession* network_session =
         main_context->http_transaction_factory()->GetSession();
 
+    ftp_factory_.reset(new net::FtpNetworkLayer(isolated_context->host_resolver()));
+
      isolated_context->SetCookieStore(cookie_store.get());
      isolated_context->SetHttpTransactionFactory(
         new net::HttpCache(network_session->params(), backend));
      isolated_context->SetJobFactory(delegate_->CreateURLRequestJobFactory(
-        &protocol_handlers_, &protocol_interceptors_));
+        &protocol_handlers_, &protocol_interceptors_, ftp_factory_.get()));
 
       return isolated_context;
    }
@@ -220,6 +227,7 @@ class IsolatedRequestContextFactory : public URLRequestContextGetterFactory {
    bool in_memory_;
 
    scoped_refptr<net::URLRequestContextGetter> main_request_context_;
+   scoped_ptr<net::FtpTransactionFactory> ftp_factory_;
    content::ProtocolHandlerMap protocol_handlers_;
    content::URLRequestInterceptorScopedVector protocol_interceptors_;
 
@@ -376,8 +384,11 @@ class MainRequestContextFactory : public URLRequestContextGetterFactory {
           delegate_->CreateHttpCacheBackendFactory(base_path_);
       storage_->set_http_transaction_factory(new net::HttpCache(network_session_params, backend));
 
+      // FTP transaction factory.
+      ftp_factory_.reset(new net::FtpNetworkLayer(main_context->host_resolver()));
+
       storage_->set_job_factory(delegate_->CreateURLRequestJobFactory(
-          &protocol_handlers_, &protocol_interceptors_));
+          &protocol_handlers_, &protocol_interceptors_, ftp_factory_.get()));
 
      return main_context;
    }
@@ -395,6 +406,7 @@ class MainRequestContextFactory : public URLRequestContextGetterFactory {
    scoped_ptr<net::URLRequestContextStorage> storage_;
    scoped_ptr<net::HostMappingRules> host_mapping_rules_;
    scoped_ptr<net::URLSecurityManager> url_sec_mgr_;
+   scoped_ptr<net::FtpTransactionFactory> ftp_factory_;
    content::ProtocolHandlerMap protocol_handlers_;
    content::URLRequestInterceptorScopedVector protocol_interceptors_;
 

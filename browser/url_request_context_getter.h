@@ -8,6 +8,7 @@
 #include "base/files/file_path.h"
 #include "base/memory/scoped_ptr.h"
 #include "content/public/browser/content_browser_client.h"
+#include "net/ftp/ftp_transaction_factory.h"
 #include "net/http/http_cache.h"
 #include "net/http/url_security_manager.h"
 #include "net/url_request/url_request_context_getter.h"
@@ -41,7 +42,8 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
     virtual std::string GetUserAgent();
     virtual net::URLRequestJobFactory* CreateURLRequestJobFactory(
         content::ProtocolHandlerMap* protocol_handlers,
-        content::URLRequestInterceptorScopedVector* protocol_interceptors);
+        content::URLRequestInterceptorScopedVector* protocol_interceptors,
+        net::FtpTransactionFactory* ftp_transaction_factory);
     virtual net::HttpCache::BackendFactory* CreateHttpCacheBackendFactory(
         const base::FilePath& base_path);
   };
