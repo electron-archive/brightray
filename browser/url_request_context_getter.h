@@ -54,6 +54,7 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
   scoped_refptr<base::SingleThreadTaskRunner> GetNetworkTaskRunner() const override;
 
   net::HostResolver* host_resolver();
+  void NotifyContextShuttingDown();
   static URLRequestContextGetter* CreateMainRequestContext(
       Delegate* delegate,
       NetLog* net_log,
@@ -72,6 +73,9 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
  private:
   scoped_ptr<URLRequestContextGetterFactory> factory_;
   net::URLRequestContext* url_request_context_;
+
+  // Ensures URLRequestContextGetterFactory::Create is called only once.
+  bool initialized_;
 
   DISALLOW_COPY_AND_ASSIGN(URLRequestContextGetter);
 };

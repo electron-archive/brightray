@@ -33,6 +33,36 @@ using content::BrowserThread;
 
 namespace brightray {
 
+namespace {
+
+struct StoragePartitionDescriptor {
+  StoragePartitionDescriptor(const base::FilePath& partition_path,
+                            const bool in_memory)
+      : partition_path_(partition_path),
+        in_memory_(in_memory) {}
+
+  bool operator<(const StoragePartitionDescriptor& rhs) const {
+    if (partition_path_ != rhs.partition_path_)
+      return partition_path_ < rhs.partition_path_;
+    else if (in_memory_ != rhs.in_memory_)
+      return in_memory_ < rhs.in_memory_;
+    else
+      return false;
+  }
+
+  const base::FilePath& partition_path_;
+  const bool in_memory_;
+};
+
+void NotifyContextShuttingDownInIO(
+    scoped_ptr<BrowserContext::URLRequestContextGetterVector> getters) {
+  DCHECK_CURRENTLY_ON(BrowserThread::IO);
+  for (auto& url_request_context_getter : *getters )
+    url_request_context_getter->NotifyContextShuttingDown();
+}
+
+}  // namespace
+
 class BrowserContext::ResourceContext : public content::ResourceContext {
  public:
   ResourceContext() : getter_(nullptr) {}
@@ -90,6 +120,10 @@ void BrowserContext::Initialize() {
 }
 
 BrowserContext::~BrowserContext() {
+  BrowserThread::PostTask(BrowserThread::IO,
+                          FROM_HERE,
+                          base::Bind(&NotifyContextShuttingDownInIO,
+                                     base::Passed(GetAllRequestContext())));
   BrowserThread::DeleteSoon(BrowserThread::IO,
                             FROM_HERE,
                             resource_context_.release());
@@ -142,6 +176,23 @@ net::NetworkDelegate* BrowserContext::CreateNetworkDelegate() {
 
 base::FilePath BrowserContext::GetPath() const {
   return path_;
+}
+
+scoped_ptr<BrowserContext::URLRequestContextGetterVector>
+BrowserContext::GetAllRequestContext() {
+  scoped_ptr<URLRequestContextGetterVector> getters(
+      new URLRequestContextGetterVector);
+
+  // isolated request context.
+  URLRequestContextGetterMap::iterator iter =
+      url_request_context_getter_map_.begin();
+  for (; iter != url_request_context_getter_map_.end(); ++iter)
+    getters->push_back(iter->second);
+
+  // main request context.
+  getters->push_back(url_request_getter_);
+
+  return getters.Pass();
 }
 
 scoped_ptr<content::ZoomLevelDelegate> BrowserContext::CreateZoomLevelDelegate(

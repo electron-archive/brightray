@@ -404,22 +404,18 @@ class MainRequestContextFactory : public URLRequestContextGetterFactory {
 URLRequestContextGetter::URLRequestContextGetter(
     URLRequestContextGetterFactory* factory)
     : factory_(factory),
-      url_request_context_(nullptr) {}
+      url_request_context_(nullptr),
+      initialized_(false) {}
 
 URLRequestContextGetter::~URLRequestContextGetter() {
-  DCHECK_CURRENTLY_ON(BrowserThread::IO);
-
-  factory_.reset();
-  url_request_context_ = nullptr;
-  URLRequestContextGetter::NotifyContextShuttingDown();
 }
 
 net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
 
-  if (!url_request_context_) {
-    url_request_context_ = new net::URLRequestContext;
-    url_request_context_->CopyFrom(factory_->Create());
+  if (!initialized_) {
+    initialized_ = true;
+    url_request_context_ = factory_->Create();
   }
 
   return url_request_context_;
@@ -427,6 +423,14 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
 
 scoped_refptr<base::SingleThreadTaskRunner> URLRequestContextGetter::GetNetworkTaskRunner() const {
   return BrowserThread::GetMessageLoopProxyForThread(BrowserThread::IO);
+}
+
+void URLRequestContextGetter::NotifyContextShuttingDown() {
+  DCHECK_CURRENTLY_ON(BrowserThread::IO);
+
+  factory_.reset();
+  url_request_context_ = nullptr;
+  net::URLRequestContextGetter::NotifyContextShuttingDown();
 }
 
 net::HostResolver* URLRequestContextGetter::host_resolver() {

@@ -17,27 +17,15 @@ namespace brightray {
 
 class PermissionManager;
 
+namespace {
+struct StoragePartitionDescriptor;
+}
+
 class BrowserContext : public content::BrowserContext,
                        public brightray::URLRequestContextGetter::Delegate {
  public:
-  struct StoragePartitionDescriptor {
-    StoragePartitionDescriptor(const base::FilePath& partition_path,
-                              const bool in_memory)
-        : partition_path_(partition_path),
-          in_memory_(in_memory) {}
-
-    bool operator<(const StoragePartitionDescriptor& rhs) const {
-      if (partition_path_ != rhs.partition_path_)
-        return partition_path_ < rhs.partition_path_;
-      else if (in_memory_ != rhs.in_memory_)
-        return in_memory_ < rhs.in_memory_;
-      else
-        return false;
-    }
-
-    const base::FilePath& partition_path_;
-    const bool in_memory_;
-  };
+  using URLRequestContextGetterVector =
+      std::vector<scoped_refptr<URLRequestContextGetter>>;
 
   BrowserContext();
   ~BrowserContext();
@@ -88,6 +76,9 @@ class BrowserContext : public content::BrowserContext,
   net::NetworkDelegate* CreateNetworkDelegate() override;
 
   base::FilePath GetPath() const override;
+
+  // Returns all the URLRequestContextGetter created for this browser context.
+  scoped_ptr<URLRequestContextGetterVector> GetAllRequestContext();
 
  private:
   using URLRequestContextGetterMap = std::map<StoragePartitionDescriptor,
