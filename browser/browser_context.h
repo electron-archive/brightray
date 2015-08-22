@@ -20,6 +20,25 @@ class PermissionManager;
 class BrowserContext : public content::BrowserContext,
                        public brightray::URLRequestContextGetter::Delegate {
  public:
+  struct StoragePartitionDescriptor {
+    StoragePartitionDescriptor(const base::FilePath& partition_path,
+                              const bool in_memory)
+        : partition_path_(partition_path),
+          in_memory_(in_memory) {}
+
+    bool operator<(const StoragePartitionDescriptor& rhs) const {
+      if (partition_path_ != rhs.partition_path_)
+        return partition_path_ < rhs.partition_path_;
+      else if (in_memory_ != rhs.in_memory_)
+        return in_memory_ < rhs.in_memory_;
+      else
+        return false;
+    }
+
+    const base::FilePath& partition_path_;
+    const bool in_memory_;
+  };
+
   BrowserContext();
   ~BrowserContext();
 
@@ -50,7 +69,6 @@ class BrowserContext : public content::BrowserContext,
       content::ProtocolHandlerMap* protocol_handlers,
       content::URLRequestInterceptorScopedVector protocol_interceptors);
   net::URLRequestContextGetter* CreateRequestContextForStoragePartition(
-      NetLog* net_log,
       const base::FilePath& partition_path,
       bool in_memory,
       content::ProtocolHandlerMap* protocol_handlers,
@@ -72,6 +90,8 @@ class BrowserContext : public content::BrowserContext,
   base::FilePath GetPath() const override;
 
  private:
+  using URLRequestContextGetterMap = std::map<StoragePartitionDescriptor,
+                                              scoped_refptr<URLRequestContextGetter>>;
   class ResourceContext;
 
   void RegisterInternalPrefs(PrefRegistrySimple* pref_registry);
@@ -81,6 +101,7 @@ class BrowserContext : public content::BrowserContext,
   scoped_refptr<URLRequestContextGetter> url_request_getter_;
   scoped_ptr<PrefService> prefs_;
   scoped_ptr<PermissionManager> permission_manager_;
+  mutable URLRequestContextGetterMap url_request_context_getter_map_;
 
   DISALLOW_COPY_AND_ASSIGN(BrowserContext);
 };

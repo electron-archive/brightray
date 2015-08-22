@@ -28,6 +28,7 @@ class URLRequestJobFactory;
 namespace brightray {
 
 class NetLog;
+class URLRequestContextGetterFactory;
 
 class URLRequestContextGetter : public net::URLRequestContextGetter {
  public:
@@ -45,15 +46,7 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
         const base::FilePath& base_path);
   };
 
-  URLRequestContextGetter(
-      Delegate* delegate,
-      NetLog* net_log,
-      const base::FilePath& base_path,
-      bool in_memory,
-      base::MessageLoop* io_loop,
-      base::MessageLoop* file_loop,
-      content::ProtocolHandlerMap* protocol_handlers,
-      content::URLRequestInterceptorScopedVector protocol_interceptors);
+  explicit URLRequestContextGetter(URLRequestContextGetterFactory* factory);
   virtual ~URLRequestContextGetter();
 
   // net::URLRequestContextGetter:
@@ -61,24 +54,24 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
   scoped_refptr<base::SingleThreadTaskRunner> GetNetworkTaskRunner() const override;
 
   net::HostResolver* host_resolver();
+  static URLRequestContextGetter* CreateMainRequestContext(
+      Delegate* delegate,
+      NetLog* net_log,
+      const base::FilePath& base_path,
+      base::MessageLoop* io_loop,
+      base::MessageLoop* file_loop,
+      content::ProtocolHandlerMap* protocol_handlers,
+      content::URLRequestInterceptorScopedVector protocol_interceptors);
+  static URLRequestContextGetter* CreateIsolatedRequestContext(
+      Delegate* delegate,
+      scoped_refptr<net::URLRequestContextGetter> main_request_context_getter,
+      const base::FilePath& partition_path, bool in_memory,
+      content::ProtocolHandlerMap* protocol_handlers,
+      content::URLRequestInterceptorScopedVector protocol_interceptors);
 
  private:
-  Delegate* delegate_;
-
-  NetLog* net_log_;
-  base::FilePath base_path_;
-  bool in_memory_;
-  base::MessageLoop* io_loop_;
-  base::MessageLoop* file_loop_;
-
-  scoped_ptr<net::ProxyConfigService> proxy_config_service_;
-  scoped_ptr<net::NetworkDelegate> network_delegate_;
-  scoped_ptr<net::URLRequestContextStorage> storage_;
-  scoped_ptr<net::URLRequestContext> url_request_context_;
-  scoped_ptr<net::HostMappingRules> host_mapping_rules_;
-  scoped_ptr<net::URLSecurityManager> url_sec_mgr_;
-  content::ProtocolHandlerMap protocol_handlers_;
-  content::URLRequestInterceptorScopedVector protocol_interceptors_;
+  scoped_ptr<URLRequestContextGetterFactory> factory_;
+  net::URLRequestContext* url_request_context_;
 
   DISALLOW_COPY_AND_ASSIGN(URLRequestContextGetter);
 };

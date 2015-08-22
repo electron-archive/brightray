@@ -104,11 +104,10 @@ net::URLRequestContextGetter* BrowserContext::CreateRequestContext(
     content::ProtocolHandlerMap* protocol_handlers,
     content::URLRequestInterceptorScopedVector protocol_interceptors) {
   DCHECK(!url_request_getter_.get());
-  url_request_getter_ = new URLRequestContextGetter(
+  url_request_getter_ = URLRequestContextGetter::CreateMainRequestContext(
       this,
       net_log,
       GetPath(),
-      false,
       BrowserThread::UnsafeGetMessageLoopForThread(BrowserThread::IO),
       BrowserThread::UnsafeGetMessageLoopForThread(BrowserThread::FILE),
       protocol_handlers,
@@ -118,22 +117,22 @@ net::URLRequestContextGetter* BrowserContext::CreateRequestContext(
 }
 
 net::URLRequestContextGetter* BrowserContext::CreateRequestContextForStoragePartition(
-    NetLog* net_log,
     const base::FilePath& partition_path,
     bool in_memory,
     content::ProtocolHandlerMap* protocol_handlers,
     content::URLRequestInterceptorScopedVector protocol_interceptors) {
   CHECK(partition_path != GetPath());
 
-  auto context = new URLRequestContextGetter(
+  StoragePartitionDescriptor partition_descriptor(partition_path, in_memory);
+
+  URLRequestContextGetter* context = URLRequestContextGetter::CreateIsolatedRequestContext(
       this,
-      net_log,
+      make_scoped_refptr(GetRequestContext()),
       partition_path,
       in_memory,
-      BrowserThread::UnsafeGetMessageLoopForThread(BrowserThread::IO),
-      BrowserThread::UnsafeGetMessageLoopForThread(BrowserThread::FILE),
       protocol_handlers,
       protocol_interceptors.Pass());
+  url_request_context_getter_map_[partition_descriptor] = context;
   return context;
 }
 

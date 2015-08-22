@@ -67,8 +67,7 @@ net::URLRequestContextGetter* BrowserClient::CreateRequestContextForStorageParti
     content::ProtocolHandlerMap* protocol_handlers,
     content::URLRequestInterceptorScopedVector protocol_interceptors) {
   auto context = static_cast<BrowserContext*>(browser_context);
-  return context->CreateRequestContextForStoragePartition(static_cast<NetLog*>(GetNetLog()),
-                                                          partition_path,
+  return context->CreateRequestContextForStoragePartition(partition_path,
                                                           in_memory,
                                                           protocol_handlers,
                                                           protocol_interceptors.Pass());
