@@ -29,7 +29,6 @@ class URLRequestJobFactory;
 namespace brightray {
 
 class NetLog;
-class URLRequestContextGetterFactory;
 
 class URLRequestContextGetter : public net::URLRequestContextGetter {
  public:
@@ -48,7 +47,16 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
         const base::FilePath& base_path);
   };
 
-  explicit URLRequestContextGetter(URLRequestContextGetterFactory* factory);
+  // Factory to construct URLRequestContext.
+  class Factory {
+   public:
+    Factory() {}
+    virtual ~Factory() {}
+
+    virtual net::URLRequestContext* Create() = 0;
+  };
+
+  explicit URLRequestContextGetter(Factory* factory);
   virtual ~URLRequestContextGetter();
 
   // net::URLRequestContextGetter:
@@ -73,7 +81,7 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
       content::URLRequestInterceptorScopedVector protocol_interceptors);
 
  private:
-  scoped_ptr<URLRequestContextGetterFactory> factory_;
+  scoped_ptr<Factory> factory_;
   net::URLRequestContext* url_request_context_;
 
   // Ensures URLRequestContextGetterFactory::Create is called only once.

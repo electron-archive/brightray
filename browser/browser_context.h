@@ -17,10 +17,6 @@ namespace brightray {
 
 class PermissionManager;
 
-namespace {
-struct StoragePartitionDescriptor;
-}
-
 class BrowserContext : public content::BrowserContext,
                        public brightray::URLRequestContextGetter::Delegate {
  public:
@@ -69,6 +65,26 @@ class BrowserContext : public content::BrowserContext,
   PrefService* prefs() { return prefs_.get(); }
 
  protected:
+  // Descriptor to map partition info (path, in_memory) => URLRequestContextGetter.
+  struct StoragePartitionDescriptor {
+    StoragePartitionDescriptor(const base::FilePath& partition_path,
+                              const bool in_memory)
+        : partition_path_(partition_path),
+          in_memory_(in_memory) {}
+
+    bool operator<(const StoragePartitionDescriptor& rhs) const {
+      if (partition_path_ != rhs.partition_path_)
+        return partition_path_ < rhs.partition_path_;
+      else if (in_memory_ != rhs.in_memory_)
+        return in_memory_ < rhs.in_memory_;
+      else
+        return false;
+    }
+
+    const base::FilePath& partition_path_;
+    const bool in_memory_;
+  };
+
   // Subclasses should override this to register custom preferences.
   virtual void RegisterPrefs(PrefRegistrySimple* pref_registry) {}
 

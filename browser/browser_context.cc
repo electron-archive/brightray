@@ -35,25 +35,6 @@ namespace brightray {
 
 namespace {
 
-struct StoragePartitionDescriptor {
-  StoragePartitionDescriptor(const base::FilePath& partition_path,
-                            const bool in_memory)
-      : partition_path_(partition_path),
-        in_memory_(in_memory) {}
-
-  bool operator<(const StoragePartitionDescriptor& rhs) const {
-    if (partition_path_ != rhs.partition_path_)
-      return partition_path_ < rhs.partition_path_;
-    else if (in_memory_ != rhs.in_memory_)
-      return in_memory_ < rhs.in_memory_;
-    else
-      return false;
-  }
-
-  const base::FilePath& partition_path_;
-  const bool in_memory_;
-};
-
 void NotifyContextShuttingDownInIO(
     scoped_ptr<BrowserContext::URLRequestContextGetterVector> getters) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
