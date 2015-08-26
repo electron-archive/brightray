@@ -56,7 +56,10 @@ void NetLog::StartLogging(net::URLRequestContext* url_request_context) {
     return;
 
   scoped_ptr<base::Value> constants(GetConstants());
-  write_to_file_observer_.StartObserving(this, log_file_.Pass(), constants.get(), url_request_context);
+  write_to_file_observer_.StartObserving(this,
+                                         log_file_.Pass(),
+                                         constants.get(),
+                                         url_request_context);
 }
 
 }  // namespace brightray

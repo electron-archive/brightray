@@ -20,6 +20,7 @@
 #include "net/cert/cert_verifier.h"
 #include "net/cookies/cookie_monster.h"
 #include "net/dns/mapped_host_resolver.h"
+#include "net/ftp/ftp_network_layer.h"
 #include "net/http/http_auth_handler_factory.h"
 #include "net/http/http_server_properties_impl.h"
 #include "net/log/net_log.h"
@@ -33,6 +34,7 @@
 #include "net/ssl/ssl_config_service_defaults.h"
 #include "net/url_request/data_protocol_handler.h"
 #include "net/url_request/file_protocol_handler.h"
+#include "net/url_request/ftp_protocol_handler.h"
 #include "net/url_request/static_http_user_agent_settings.h"
 #include "net/url_request/url_request_context.h"
 #include "net/url_request/url_request_context_storage.h"
@@ -83,7 +85,8 @@ std::string URLRequestContextGetter::Delegate::GetUserAgent() {
 
 net::URLRequestJobFactory* URLRequestContextGetter::Delegate::CreateURLRequestJobFactory(
     content::ProtocolHandlerMap* protocol_handlers,
-    content::URLRequestInterceptorScopedVector* protocol_interceptors) {
+    content::URLRequestInterceptorScopedVector* protocol_interceptors,
+    net::FtpTransactionFactory* ftp_transaction_factory) {
   scoped_ptr<net::URLRequestJobFactoryImpl> job_factory(new net::URLRequestJobFactoryImpl);
 
   for (auto it = protocol_handlers->begin(); it != protocol_handlers->end(); ++it)
@@ -94,6 +97,8 @@ net::URLRequestJobFactory* URLRequestContextGetter::Delegate::CreateURLRequestJo
   job_factory->SetProtocolHandler(url::kFileScheme, new net::FileProtocolHandler(
       BrowserThread::GetBlockingPool()->GetTaskRunnerWithShutdownBehavior(
           base::SequencedWorkerPool::SKIP_ON_SHUTDOWN)));
+  job_factory->SetProtocolHandler(url::kFtpScheme, new net::FtpProtocolHandler(
+      ftp_transaction_factory));
 
   // Set up interceptors in the reverse order.
   scoped_ptr<net::URLRequestJobFactory> top_job_factory = job_factory.Pass();
@@ -117,8 +122,113 @@ URLRequestContextGetter::Delegate::CreateHttpCacheBackendFactory(const base::Fil
       BrowserThread::GetMessageLoopProxyForThread(BrowserThread::CACHE));
 }
 
-URLRequestContextGetter::URLRequestContextGetter(
-    Delegate* delegate,
+// Container Class that owns cookie_store and http_factory
+// to ensure their deletion.
+class IsolatedRequestContext : public net::URLRequestContext {
+ public:
+  IsolatedRequestContext() {}
+
+  void SetCookieStore(net::CookieStore* cookie_store) {
+    cookie_store_ = cookie_store;
+    set_cookie_store(cookie_store);
+  }
+
+  void SetHttpTransactionFactory(net::HttpTransactionFactory* http_factory) {
+    http_factory_.reset(http_factory);
+    set_http_transaction_factory(http_factory_.get());
+  }
+
+  void SetJobFactory(net::URLRequestJobFactory* job_factory) {
+    job_factory_.reset(job_factory);
+    set_job_factory(job_factory_.get());
+  }
+
+ private:
+  scoped_refptr<net::CookieStore> cookie_store_;
+  scoped_ptr<net::HttpTransactionFactory> http_factory_;
+  scoped_ptr<net::URLRequestJobFactory> job_factory_;
+};
+
+// Factory to create Isolated URLRequestContext.
+class IsolatedRequestContextFactory : public URLRequestContextGetter::Factory {
+ public:
+  IsolatedRequestContextFactory(
+    URLRequestContextGetter::Delegate* delegate,
+    scoped_refptr<net::URLRequestContextGetter> main_request_context_getter,
+    const base::FilePath& partition_path,
+    bool in_memory,
+    content::ProtocolHandlerMap* protocol_handlers,
+    content::URLRequestInterceptorScopedVector protocol_interceptors)
+    : delegate_(delegate),
+      main_request_context_(main_request_context_getter),
+      base_path_(partition_path),
+      in_memory_(in_memory),
+      protocol_interceptors_(protocol_interceptors.Pass()) {
+    // Must first be created on the UI thread.
+    DCHECK_CURRENTLY_ON(BrowserThread::UI);
+
+    std::swap(protocol_handlers_, *protocol_handlers);
+  }
+
+  net::URLRequestContext* Create() override {
+    DCHECK_CURRENTLY_ON(BrowserThread::IO);
+
+    net::URLRequestContext* main_context =
+      main_request_context_->GetURLRequestContext();
+    IsolatedRequestContext* isolated_context = new IsolatedRequestContext();
+
+    isolated_context->CopyFrom(main_context);
+
+    scoped_refptr<net::CookieStore> cookie_store = nullptr;
+    if (in_memory_) {
+      cookie_store = content::CreateCookieStore(content::CookieStoreConfig());
+    } else {
+      auto cookie_config = content::CookieStoreConfig(
+          base_path_.Append(FILE_PATH_LITERAL("Cookies")),
+          content::CookieStoreConfig::EPHEMERAL_SESSION_COOKIES,
+          NULL, NULL);
+      cookie_store = content::CreateCookieStore(cookie_config);
+    }
+
+    net::HttpCache::BackendFactory* backend = nullptr;
+    if (in_memory_) {
+      backend = net::HttpCache::DefaultBackend::InMemory(0);
+    } else {
+      backend = delegate_->CreateHttpCacheBackendFactory(base_path_);
+    }
+    net::HttpNetworkSession* network_session =
+        main_context->http_transaction_factory()->GetSession();
+
+    ftp_factory_.reset(new net::FtpNetworkLayer(isolated_context->host_resolver()));
+
+    isolated_context->SetCookieStore(cookie_store.get());
+    isolated_context->SetHttpTransactionFactory(
+        new net::HttpCache(network_session->params(), backend));
+    isolated_context->SetJobFactory(delegate_->CreateURLRequestJobFactory(
+        &protocol_handlers_, &protocol_interceptors_, ftp_factory_.get()));
+
+    return isolated_context;
+  }
+
+ private:
+  URLRequestContextGetter::Delegate* delegate_;
+
+  base::FilePath base_path_;
+  bool in_memory_;
+
+  scoped_refptr<net::URLRequestContextGetter> main_request_context_;
+  scoped_ptr<net::FtpTransactionFactory> ftp_factory_;
+  content::ProtocolHandlerMap protocol_handlers_;
+  content::URLRequestInterceptorScopedVector protocol_interceptors_;
+
+  DISALLOW_COPY_AND_ASSIGN(IsolatedRequestContextFactory);
+};
+
+// Factory to create the main URLRequestContext.
+class MainRequestContextFactory : public URLRequestContextGetter::Factory {
+ public:
+  MainRequestContextFactory(
+    URLRequestContextGetter::Delegate* delegate,
     NetLog* net_log,
     const base::FilePath& base_path,
     base::MessageLoop* io_loop,
@@ -132,45 +242,40 @@ URLRequestContextGetter::URLRequestContextGetter(
       file_loop_(file_loop),
       url_sec_mgr_(net::URLSecurityManager::Create(NULL, NULL)),
       protocol_interceptors_(protocol_interceptors.Pass()) {
-  // Must first be created on the UI thread.
-  DCHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
+    // Must first be created on the UI thread.
+    DCHECK_CURRENTLY_ON(BrowserThread::UI);
 
-  std::swap(protocol_handlers_, *protocol_handlers);
+    std::swap(protocol_handlers_, *protocol_handlers);
 
-  // We must create the proxy config service on the UI loop on Linux because it
-  // must synchronously run on the glib message loop. This will be passed to
-  // the URLRequestContextStorage on the IO thread in GetURLRequestContext().
-  proxy_config_service_.reset(net::ProxyService::CreateSystemProxyConfigService(
-      io_loop_->message_loop_proxy(), file_loop_->message_loop_proxy()));
-}
+    // We must create the proxy config service on the UI loop on Linux because it
+    // must synchronously run on the glib message loop. This will be passed to
+    // the URLRequestContextStorage on the IO thread in GetURLRequestContext().
+    proxy_config_service_.reset(net::ProxyService::CreateSystemProxyConfigService(
+        io_loop_->message_loop_proxy(), file_loop_->message_loop_proxy()));
+  }
 
-URLRequestContextGetter::~URLRequestContextGetter() {
-}
+  net::URLRequestContext* Create() override {
+    DCHECK_CURRENTLY_ON(BrowserThread::IO);
 
-net::HostResolver* URLRequestContextGetter::host_resolver() {
-  return url_request_context_->host_resolver();
-}
-
-net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
-  DCHECK(BrowserThread::CurrentlyOn(BrowserThread::IO));
-
-  auto& command_line = *base::CommandLine::ForCurrentProcess();
-  if (!url_request_context_.get()) {
-    url_request_context_.reset(new net::URLRequestContext);
+    auto& command_line = *base::CommandLine::ForCurrentProcess();
+    net::URLRequestContext* main_context = new net::URLRequestContext();
 
     // --log-net-log
-    net_log_->StartLogging(url_request_context_.get());
-    url_request_context_->set_net_log(net_log_);
+    net_log_->StartLogging(main_context);
+    main_context->set_net_log(net_log_);
 
     network_delegate_.reset(delegate_->CreateNetworkDelegate());
-    url_request_context_->set_network_delegate(network_delegate_.get());
+    main_context->set_network_delegate(network_delegate_.get());
 
-    storage_.reset(new net::URLRequestContextStorage(url_request_context_.get()));
+    storage_.reset(new net::URLRequestContextStorage(main_context));
+
     auto cookie_config = content::CookieStoreConfig(
         base_path_.Append(FILE_PATH_LITERAL("Cookies")),
         content::CookieStoreConfig::EPHEMERAL_SESSION_COOKIES,
         NULL, NULL);
-    storage_->set_cookie_store(content::CreateCookieStore(cookie_config));
+    scoped_refptr<net::CookieStore> cookie_store = content::CreateCookieStore(cookie_config);
+
+    storage_->set_cookie_store(cookie_store.get());
     storage_->set_channel_id_service(make_scoped_ptr(
         new net::ChannelIDService(new net::DefaultChannelIDStore(NULL),
                                   base::WorkerPool::GetTaskRunner(true))));
@@ -205,11 +310,11 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
       storage_->set_proxy_service(
           net::CreateProxyServiceUsingV8ProxyResolver(
               proxy_config_service_.release(),
-              new net::ProxyScriptFetcherImpl(url_request_context_.get()),
-              dhcp_factory.Create(url_request_context_.get()),
+              new net::ProxyScriptFetcherImpl(main_context),
+              dhcp_factory.Create(main_context),
               host_resolver.get(),
               NULL,
-              url_request_context_->network_delegate()));
+              main_context->network_delegate()));
     }
 
     std::vector<std::string> schemes;
@@ -236,19 +341,19 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     storage_->set_http_server_properties(server_properties.Pass());
 
     net::HttpNetworkSession::Params network_session_params;
-    network_session_params.cert_verifier = url_request_context_->cert_verifier();
-    network_session_params.proxy_service = url_request_context_->proxy_service();
-    network_session_params.ssl_config_service = url_request_context_->ssl_config_service();
-    network_session_params.network_delegate = url_request_context_->network_delegate();
-    network_session_params.http_server_properties = url_request_context_->http_server_properties();
+    network_session_params.cert_verifier = main_context->cert_verifier();
+    network_session_params.proxy_service = main_context->proxy_service();
+    network_session_params.ssl_config_service = main_context->ssl_config_service();
+    network_session_params.network_delegate = main_context->network_delegate();
+    network_session_params.http_server_properties = main_context->http_server_properties();
     network_session_params.ignore_certificate_errors = false;
     network_session_params.transport_security_state =
-        url_request_context_->transport_security_state();
+        main_context->transport_security_state();
     network_session_params.channel_id_service =
-        url_request_context_->channel_id_service();
+        main_context->channel_id_service();
     network_session_params.http_auth_handler_factory =
-        url_request_context_->http_auth_handler_factory();
-    network_session_params.net_log = url_request_context_->net_log();
+        main_context->http_auth_handler_factory();
+    network_session_params.net_log = main_context->net_log();
 
     // --ignore-certificate-errors
     if (command_line.HasSwitch(switches::kIgnoreCertificateErrors))
@@ -263,20 +368,106 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
 
     // Give |storage_| ownership at the end in case it's |mapped_host_resolver|.
     storage_->set_host_resolver(host_resolver.Pass());
-    network_session_params.host_resolver = url_request_context_->host_resolver();
+    network_session_params.host_resolver = main_context->host_resolver();
 
-    net::HttpCache::BackendFactory* backend = delegate_->CreateHttpCacheBackendFactory(base_path_);
+    net::HttpCache::BackendFactory* backend =
+        delegate_->CreateHttpCacheBackendFactory(base_path_);
     storage_->set_http_transaction_factory(new net::HttpCache(network_session_params, backend));
 
+    // FTP transaction factory.
+    ftp_factory_.reset(new net::FtpNetworkLayer(main_context->host_resolver()));
+
     storage_->set_job_factory(delegate_->CreateURLRequestJobFactory(
-        &protocol_handlers_, &protocol_interceptors_));
+        &protocol_handlers_, &protocol_interceptors_, ftp_factory_.get()));
+
+    return main_context;
   }
 
-  return url_request_context_.get();
+ private:
+  URLRequestContextGetter::Delegate* delegate_;
+
+  NetLog* net_log_;
+  base::FilePath base_path_;
+  base::MessageLoop* io_loop_;
+  base::MessageLoop* file_loop_;
+
+  scoped_ptr<net::ProxyConfigService> proxy_config_service_;
+  scoped_ptr<net::NetworkDelegate> network_delegate_;
+  scoped_ptr<net::URLRequestContextStorage> storage_;
+  scoped_ptr<net::HostMappingRules> host_mapping_rules_;
+  scoped_ptr<net::URLSecurityManager> url_sec_mgr_;
+  scoped_ptr<net::FtpTransactionFactory> ftp_factory_;
+  content::ProtocolHandlerMap protocol_handlers_;
+  content::URLRequestInterceptorScopedVector protocol_interceptors_;
+
+  DISALLOW_COPY_AND_ASSIGN(MainRequestContextFactory);
+};
+
+URLRequestContextGetter::URLRequestContextGetter(Factory* factory)
+    : factory_(factory),
+      url_request_context_(nullptr),
+      initialized_(false) {}
+
+URLRequestContextGetter::~URLRequestContextGetter() {
+}
+
+net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
+  DCHECK_CURRENTLY_ON(BrowserThread::IO);
+
+  if (!initialized_) {
+    initialized_ = true;
+    url_request_context_ = factory_->Create();
+  }
+
+  return url_request_context_;
 }
 
 scoped_refptr<base::SingleThreadTaskRunner> URLRequestContextGetter::GetNetworkTaskRunner() const {
   return BrowserThread::GetMessageLoopProxyForThread(BrowserThread::IO);
+}
+
+void URLRequestContextGetter::NotifyContextShuttingDown() {
+  DCHECK_CURRENTLY_ON(BrowserThread::IO);
+
+  factory_.reset();
+  url_request_context_ = nullptr;
+  net::URLRequestContextGetter::NotifyContextShuttingDown();
+}
+
+net::HostResolver* URLRequestContextGetter::host_resolver() {
+  return url_request_context_->host_resolver();
+}
+
+// static
+URLRequestContextGetter* URLRequestContextGetter::CreateMainRequestContext(
+    Delegate* delegate, NetLog* net_log, const base::FilePath& base_path,
+    base::MessageLoop* io_loop, base::MessageLoop* file_loop,
+    content::ProtocolHandlerMap* protocol_handlers,
+    content::URLRequestInterceptorScopedVector protocol_interceptors) {
+  return new URLRequestContextGetter(
+      new MainRequestContextFactory(delegate,
+                                    net_log,
+                                    base_path,
+                                    io_loop,
+                                    file_loop,
+                                    protocol_handlers,
+                                    protocol_interceptors.Pass()));
+}
+
+// static
+URLRequestContextGetter* URLRequestContextGetter::CreateIsolatedRequestContext(
+    Delegate* delegate,
+    scoped_refptr<net::URLRequestContextGetter> main_request_context_getter,
+    const base::FilePath& partition_path, bool in_memory,
+    content::ProtocolHandlerMap* protocol_handlers,
+    content::URLRequestInterceptorScopedVector protocol_interceptors) {
+  return new URLRequestContextGetter(
+      new IsolatedRequestContextFactory(delegate,
+                                        main_request_context_getter,
+                                        partition_path,
+                                        in_memory,
+                                        protocol_handlers,
+                                        protocol_interceptors.Pass()));
 }
 
 }  // namespace brightray

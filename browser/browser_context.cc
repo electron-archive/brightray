@@ -33,6 +33,17 @@ using content::BrowserThread;
 
 namespace brightray {
 
+namespace {
+
+void NotifyContextShuttingDownInIO(
+    scoped_ptr<BrowserContext::URLRequestContextGetterVector> getters) {
+  DCHECK_CURRENTLY_ON(BrowserThread::IO);
+  for (auto& url_request_context_getter : *getters )
+    url_request_context_getter->NotifyContextShuttingDown();
+}
+
+}  // namespace
+
 class BrowserContext::ResourceContext : public content::ResourceContext {
  public:
   ResourceContext() : getter_(nullptr) {}
@@ -90,6 +101,10 @@ void BrowserContext::Initialize() {
 }
 
 BrowserContext::~BrowserContext() {
+  BrowserThread::PostTask(BrowserThread::IO,
+                          FROM_HERE,
+                          base::Bind(&NotifyContextShuttingDownInIO,
+                                     base::Passed(GetAllRequestContext())));
   BrowserThread::DeleteSoon(BrowserThread::IO,
                             FROM_HERE,
                             resource_context_.release());
@@ -104,7 +119,7 @@ net::URLRequestContextGetter* BrowserContext::CreateRequestContext(
     content::ProtocolHandlerMap* protocol_handlers,
     content::URLRequestInterceptorScopedVector protocol_interceptors) {
   DCHECK(!url_request_getter_.get());
-  url_request_getter_ = new URLRequestContextGetter(
+  url_request_getter_ = URLRequestContextGetter::CreateMainRequestContext(
       this,
       net_log,
       GetPath(),
@@ -116,12 +131,49 @@ net::URLRequestContextGetter* BrowserContext::CreateRequestContext(
   return url_request_getter_.get();
 }
 
+net::URLRequestContextGetter* BrowserContext::CreateRequestContextForStoragePartition(
+    const base::FilePath& partition_path,
+    bool in_memory,
+    content::ProtocolHandlerMap* protocol_handlers,
+    content::URLRequestInterceptorScopedVector protocol_interceptors) {
+  CHECK(partition_path != GetPath());
+
+  StoragePartitionDescriptor partition_descriptor(partition_path, in_memory);
+
+  URLRequestContextGetter* context = URLRequestContextGetter::CreateIsolatedRequestContext(
+      this,
+      make_scoped_refptr(GetRequestContext()),
+      partition_path,
+      in_memory,
+      protocol_handlers,
+      protocol_interceptors.Pass());
+  url_request_context_getter_map_[partition_descriptor] = context;
+  return context;
+}
+
 net::NetworkDelegate* BrowserContext::CreateNetworkDelegate() {
   return new NetworkDelegate;
 }
 
 base::FilePath BrowserContext::GetPath() const {
   return path_;
+}
+
+scoped_ptr<BrowserContext::URLRequestContextGetterVector>
+BrowserContext::GetAllRequestContext() {
+  scoped_ptr<URLRequestContextGetterVector> getters(
+      new URLRequestContextGetterVector);
+
+  // isolated request context.
+  URLRequestContextGetterMap::iterator iter =
+      url_request_context_getter_map_.begin();
+  for (; iter != url_request_context_getter_map_.end(); ++iter)
+    getters->push_back(iter->second);
+
+  // main request context.
+  getters->push_back(url_request_getter_);
+
+  return getters.Pass();
 }
 
 scoped_ptr<content::ZoomLevelDelegate> BrowserContext::CreateZoomLevelDelegate(
@@ -156,7 +208,9 @@ net::URLRequestContextGetter*
     BrowserContext::GetMediaRequestContextForStoragePartition(
         const base::FilePath& partition_path,
         bool in_memory) {
-  return GetRequestContext();
+  // Since we have already created URLRequestContext to be used for the partition,
+  // this can be NULL.
+  return nullptr;
 }
 
 content::ResourceContext* BrowserContext::GetResourceContext() {

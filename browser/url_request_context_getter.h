@@ -8,6 +8,7 @@
 #include "base/files/file_path.h"
 #include "base/memory/scoped_ptr.h"
 #include "content/public/browser/content_browser_client.h"
+#include "net/ftp/ftp_transaction_factory.h"
 #include "net/http/http_cache.h"
 #include "net/http/url_security_manager.h"
 #include "net/url_request/url_request_context_getter.h"
@@ -40,19 +41,22 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
     virtual std::string GetUserAgent();
     virtual net::URLRequestJobFactory* CreateURLRequestJobFactory(
         content::ProtocolHandlerMap* protocol_handlers,
-        content::URLRequestInterceptorScopedVector* protocol_interceptors);
+        content::URLRequestInterceptorScopedVector* protocol_interceptors,
+        net::FtpTransactionFactory* ftp_transaction_factory);
     virtual net::HttpCache::BackendFactory* CreateHttpCacheBackendFactory(
         const base::FilePath& base_path);
   };
 
-  URLRequestContextGetter(
-      Delegate* delegate,
-      NetLog* net_log,
-      const base::FilePath& base_path,
-      base::MessageLoop* io_loop,
-      base::MessageLoop* file_loop,
-      content::ProtocolHandlerMap* protocol_handlers,
-      content::URLRequestInterceptorScopedVector protocol_interceptors);
+  // Factory to construct URLRequestContext.
+  class Factory {
+   public:
+    Factory() {}
+    virtual ~Factory() {}
+
+    virtual net::URLRequestContext* Create() = 0;
+  };
+
+  explicit URLRequestContextGetter(Factory* factory);
   virtual ~URLRequestContextGetter();
 
   // net::URLRequestContextGetter:
@@ -60,23 +64,28 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
   scoped_refptr<base::SingleThreadTaskRunner> GetNetworkTaskRunner() const override;
 
   net::HostResolver* host_resolver();
+  void NotifyContextShuttingDown();
+  static URLRequestContextGetter* CreateMainRequestContext(
+      Delegate* delegate,
+      NetLog* net_log,
+      const base::FilePath& base_path,
+      base::MessageLoop* io_loop,
+      base::MessageLoop* file_loop,
+      content::ProtocolHandlerMap* protocol_handlers,
+      content::URLRequestInterceptorScopedVector protocol_interceptors);
+  static URLRequestContextGetter* CreateIsolatedRequestContext(
+      Delegate* delegate,
+      scoped_refptr<net::URLRequestContextGetter> main_request_context_getter,
+      const base::FilePath& partition_path, bool in_memory,
+      content::ProtocolHandlerMap* protocol_handlers,
+      content::URLRequestInterceptorScopedVector protocol_interceptors);
 
  private:
-  Delegate* delegate_;
+  scoped_ptr<Factory> factory_;
+  net::URLRequestContext* url_request_context_;
 
-  NetLog* net_log_;
-  base::FilePath base_path_;
-  base::MessageLoop* io_loop_;
-  base::MessageLoop* file_loop_;
-
-  scoped_ptr<net::ProxyConfigService> proxy_config_service_;
-  scoped_ptr<net::NetworkDelegate> network_delegate_;
-  scoped_ptr<net::URLRequestContextStorage> storage_;
-  scoped_ptr<net::URLRequestContext> url_request_context_;
-  scoped_ptr<net::HostMappingRules> host_mapping_rules_;
-  scoped_ptr<net::URLSecurityManager> url_sec_mgr_;
-  content::ProtocolHandlerMap protocol_handlers_;
-  content::URLRequestInterceptorScopedVector protocol_interceptors_;
+  // Ensures URLRequestContextGetterFactory::Create is called only once.
+  bool initialized_;
 
   DISALLOW_COPY_AND_ASSIGN(URLRequestContextGetter);
 };
