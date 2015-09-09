@@ -175,7 +175,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     } else {
       auto cookie_config = content::CookieStoreConfig(
           base_path_.Append(FILE_PATH_LITERAL("Cookies")),
-          content::CookieStoreConfig::EPHEMERAL_SESSION_COOKIES,
+          content::CookieStoreConfig::PERSISTANT_SESSION_COOKIES,
           NULL, NULL);
       cookie_store = content::CreateCookieStore(cookie_config);
     }
