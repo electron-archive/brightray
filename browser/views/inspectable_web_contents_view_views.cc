@@ -83,7 +83,6 @@ InspectableWebContentsViewViews::InspectableWebContentsViewViews(
   set_owned_by_client();
 
   devtools_web_view_->SetVisible(false);
-  contents_web_view_->SetWebContents(inspectable_web_contents_->GetWebContents());
   AddChildView(devtools_web_view_);
   AddChildView(contents_web_view_);
 }
@@ -150,6 +149,10 @@ bool InspectableWebContentsViewViews::IsDevToolsViewFocused() {
     return devtools_web_view_->HasFocus();
   else
     return false;
+}
+
+void InspectableWebContentsViewViews::InstallWebContentsView() {
+  contents_web_view_->SetWebContents(inspectable_web_contents_->GetWebContents());
 }
 
 void InspectableWebContentsViewViews::SetIsDocked(bool docked) {

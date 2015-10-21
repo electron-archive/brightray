@@ -40,6 +40,7 @@ class InspectableWebContentsView {
   virtual gfx::NativeView GetNativeView() const = 0;
 #endif
 
+  virtual void InstallWebContentsView() = 0;
   virtual void ShowDevTools() = 0;
   // Hide the DevTools view.
   virtual void CloseDevTools() = 0;

@@ -18,6 +18,7 @@ class InspectableWebContentsViewMac : public InspectableWebContentsView {
   virtual ~InspectableWebContentsViewMac();
 
   gfx::NativeView GetNativeView() const override;
+  void InstallWebContentsView() override;
   void ShowDevTools() override;
   void CloseDevTools() override;
   bool IsDevToolsViewShowing() override;
