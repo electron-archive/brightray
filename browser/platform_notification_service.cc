@@ -23,7 +23,8 @@ void RemoveNotification(base::WeakPtr<Notification> notification) {
 
 PlatformNotificationService::PlatformNotificationService(
     BrowserClient* browser_client)
-    : browser_client_(browser_client) {
+    : browser_client_(browser_client),
+      render_process_id_(0) {
 }
 
 PlatformNotificationService::~PlatformNotificationService() {}
@@ -32,6 +33,7 @@ blink::WebNotificationPermission PlatformNotificationService::CheckPermissionOnU
     content::BrowserContext* browser_context,
     const GURL& origin,
     int render_process_id) {
+  render_process_id_ = render_process_id;
   return blink::WebNotificationPermissionAllowed;
 }
 
@@ -49,6 +51,8 @@ void PlatformNotificationService::DisplayNotification(
     const content::PlatformNotificationData& data,
     scoped_ptr<content::DesktopNotificationDelegate> delegate,
     base::Closure* cancel_callback) {
+  if (!browser_client_->WebNotificationAllowed(render_process_id_))
+    return;
   auto presenter = browser_client_->GetNotificationPresenter();
   if (!presenter)
     return;
