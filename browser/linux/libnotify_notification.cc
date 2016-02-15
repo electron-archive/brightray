@@ -16,31 +16,14 @@ namespace brightray {
 
 namespace {
 
-bool unity_has_result = false;
-bool unity_result = false;
-
 bool UnityIsRunning() {
   if (getenv("ELECTRON_USE_UBUNTU_NOTIFIER"))
     return true;
 
-  if (unity_has_result)
-    return unity_result;
+  if (strcmp(getenv("XDG_CURRENT_DESKTOP"), "Unity"))
+    return true;
 
-  unity_has_result = true;
-
-  // Look for the presence of libunity as our hint that we're under Ubuntu.
-  base::FileEnumerator enumerator(base::FilePath("/usr/lib"),
-                                  false, base::FileEnumerator::FILES);
-  base::FilePath haystack;
-  while (!((haystack = enumerator.Next()).empty())) {
-    if (base::StartsWith(haystack.value(), "/usr/lib/libunity-",
-                         base::CompareCase::SENSITIVE)) {
-      unity_result = true;
-      break;
-    }
-  }
-
-  return unity_result;
+  return false;
 }
 
 void log_and_clear_error(GError* error, const char* context) {
