@@ -44,6 +44,7 @@ class InspectableWebContents {
                                   const base::Value* arg1 = nullptr,
                                   const base::Value* arg2 = nullptr,
                                   const base::Value* arg3 = nullptr) = 0;
+  virtual void SendProtocolMessage(const std::string& message) = 0;
 };
 
 }  // namespace brightray
