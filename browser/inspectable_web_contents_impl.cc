@@ -317,6 +317,10 @@ void InspectableWebContentsImpl::CallClientFunction(const std::string& function_
       base::UTF8ToUTF16(javascript));
 }
 
+void InspectableWebContentsImpl::SendProtocolMessage(const std::string& message) {
+  DispatchProtocolMessage(agent_host_.get(), message);
+}
+
 gfx::Rect InspectableWebContentsImpl::GetDevToolsBounds() const {
   return devtools_bounds_;
 }
