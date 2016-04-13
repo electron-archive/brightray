@@ -77,6 +77,7 @@ LibnotifyNotification::LibnotifyNotification(NotificationDelegate* delegate,
 }
 
 LibnotifyNotification::~LibnotifyNotification() {
+  g_signal_handlers_disconnect_by_data(notification_, this);
   g_object_unref(notification_);
 }
 
