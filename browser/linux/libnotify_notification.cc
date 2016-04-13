@@ -15,32 +15,29 @@
 namespace brightray {
 
 namespace {
+LibNotifyLoader libnotify_loader_;
 
-bool unity_has_result = false;
-bool unity_result = false;
-
-bool UnityIsRunning() {
+bool NotifyOSDIsRunning() {
   if (getenv("ELECTRON_USE_UBUNTU_NOTIFIER"))
     return true;
 
-  if (unity_has_result)
-    return unity_result;
+  static bool notify_has_result = false;
+  static bool notify_result = false;
+  char *notifier_name = NULL;
 
-  unity_has_result = true;
+  if (notify_has_result)
+    return notify_result;
 
-  // Look for the presence of libunity as our hint that we're under Ubuntu.
-  base::FileEnumerator enumerator(base::FilePath("/usr/lib"),
-                                  false, base::FileEnumerator::FILES);
-  base::FilePath haystack;
-  while (!((haystack = enumerator.Next()).empty())) {
-    if (base::StartsWith(haystack.value(), "/usr/lib/libunity-",
-                         base::CompareCase::SENSITIVE)) {
-      unity_result = true;
-      break;
+  if (libnotify_loader_.notify_get_server_info(&notifier_name, NULL, NULL, NULL)) {
+    notify_has_result = true;
+
+    if (g_strcmp0(notifier_name, "notify-osd") == 0) {
+      notify_result = true;
     }
   }
 
-  return unity_result;
+  g_free(notifier_name);
+  return notify_result;
 }
 
 void log_and_clear_error(GError* error, const char* context) {
@@ -58,9 +55,6 @@ Notification* Notification::Create(NotificationDelegate* delegate,
                                    NotificationPresenter* presenter) {
   return new LibnotifyNotification(delegate, presenter);
 }
-
-// static
-LibNotifyLoader LibnotifyNotification::libnotify_loader_;
 
 // static
 bool LibnotifyNotification::Initialize() {
@@ -103,7 +97,7 @@ void LibnotifyNotification::Show(const base::string16& title,
   // to display as a modal dialog box. Testing for distros that have "Unity
   // Zen Nature" is difficult, we will test for the presence of the indicate
   // dbus service
-  if (!UnityIsRunning()) {
+  if (!NotifyOSDIsRunning()) {
     libnotify_loader_.notify_notification_add_action(
         notification_, "default", "View", OnNotificationViewThunk, this,
         nullptr);
