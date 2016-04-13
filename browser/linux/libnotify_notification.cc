@@ -93,10 +93,8 @@ void LibnotifyNotification::Show(const base::string16& title,
   g_signal_connect(
       notification_, "closed", G_CALLBACK(OnNotificationClosedThunk), this);
 
-  // NB: On Unity, adding a notification action will cause the notification
-  // to display as a modal dialog box. Testing for distros that have "Unity
-  // Zen Nature" is difficult, we will test for the presence of the indicate
-  // dbus service
+  // NB: On Unity and on any other DE using Notify-OSD, adding a notification
+  // action will cause the notification to display as a modal dialog box.
   if (!NotifyOSDIsRunning()) {
     libnotify_loader_.notify_notification_add_action(
         notification_, "default", "View", OnNotificationViewThunk, this,
