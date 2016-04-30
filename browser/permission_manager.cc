@@ -22,13 +22,12 @@ int PermissionManager::RequestPermission(
     content::PermissionType permission,
     content::RenderFrameHost* render_frame_host,
     const GURL& requesting_origin,
-    bool user_gesture,
     const base::Callback<void(content::PermissionStatus)>& callback) {
   if (permission == content::PermissionType::MIDI_SYSEX) {
     content::ChildProcessSecurityPolicy::GetInstance()->
         GrantSendMidiSysExMessage(render_frame_host->GetProcess()->GetID());
   }
-  callback.Run(content::PERMISSION_STATUS_GRANTED);
+  callback.Run(content::PermissionStatus::GRANTED);
   return kNoPendingOperation;
 }
 
@@ -36,7 +35,6 @@ int PermissionManager::RequestPermissions(
     const std::vector<content::PermissionType>& permissions,
     content::RenderFrameHost* render_frame_host,
     const GURL& requesting_origin,
-    bool user_gesture,
     const base::Callback<void(
         const std::vector<content::PermissionStatus>&)>& callback) {
   std::vector<content::PermissionStatus> permissionStatuses;
@@ -47,7 +45,7 @@ int PermissionManager::RequestPermissions(
           GrantSendMidiSysExMessage(render_frame_host->GetProcess()->GetID());
     }
 
-    permissionStatuses.push_back(content::PERMISSION_STATUS_GRANTED);
+    permissionStatuses.push_back(content::PermissionStatus::GRANTED);
   }
 
   callback.Run(permissionStatuses);
@@ -67,7 +65,7 @@ content::PermissionStatus PermissionManager::GetPermissionStatus(
     content::PermissionType permission,
     const GURL& requesting_origin,
     const GURL& embedding_origin) {
-  return content::PERMISSION_STATUS_GRANTED;
+  return content::PermissionStatus::GRANTED;
 }
 
 void PermissionManager::RegisterPermissionUsage(

@@ -15,9 +15,11 @@
 #include "base/json/json_reader.h"
 #include "base/json/json_writer.h"
 #include "base/metrics/histogram.h"
-#include "base/prefs/pref_registry_simple.h"
-#include "base/prefs/pref_service.h"
-#include "base/prefs/scoped_user_pref_update.h"
+
+#include "components/prefs/pref_service.h"
+#include "components/prefs/scoped_user_pref_update.h"
+#include "components/prefs/pref_registry_simple.h"
+
 #include "base/strings/pattern.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
@@ -212,7 +214,7 @@ InspectableWebContentsImpl::InspectableWebContentsImpl(
       devtools_bounds_.set_height(600);
       devtools_bounds_.set_width(800);
     }
-    gfx::Rect display = gfx::Screen::GetNativeScreen()
+    gfx::Rect display = gfx::Screen::GetScreen()
         ->GetDisplayNearestWindow(web_contents->GetNativeView()).bounds();
     if (!IsPointInRect(devtools_bounds_.origin(), display)) {
       devtools_bounds_.set_x(display.x() + (display.width() - devtools_bounds_.width()) / 2);
@@ -678,7 +680,7 @@ void InspectableWebContentsImpl::OnURLFetchComplete(const net::URLFetcher* sourc
   response.SetInteger("statusCode", rh ? rh->response_code() : 200);
   response.Set("headers", headers);
 
-  void* iterator = nullptr;
+  size_t iterator = 0;
   std::string name;
   std::string value;
   while (rh && rh->EnumerateHeaderLines(&iterator, &name, &value))
