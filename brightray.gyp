@@ -189,12 +189,14 @@
                   '$(SDKROOT)/System/Library/Frameworks/ApplicationServices.framework',
                   '$(SDKROOT)/System/Library/Frameworks/Carbon.framework',
                   '$(SDKROOT)/System/Library/Frameworks/CoreFoundation.framework',
+                  # bluetooth.gyp:
+                  '$(SDKROOT)/System/Library/Frameworks/IOBluetooth.framework',
+                  # device/gamepad/BUILD.gn:
+                  '$(SDKROOT)/System/Library/Frameworks/GameController.framework',
                   # content_browser.gypi:
                   '-lbsm',
                   # content_common.gypi:
                   '-lsandbox',
-                  # bluetooth.gyp:
-                  '$(SDKROOT)/System/Library/Frameworks/IOBluetooth.framework',
                 ],
               },
             }],
