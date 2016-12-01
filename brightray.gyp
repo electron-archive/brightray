@@ -143,6 +143,7 @@
               'link_settings': {
                 'libraries': [
                   # Following libraries are always linked statically.
+                  '<(libchromiumcontent_dir)/obj/components/cdm/renderer/librenderer.a',
                   '<(libchromiumcontent_dir)/obj/components/cookie_config/libcookie_config.a',
                   '<(libchromiumcontent_dir)/obj/components/devtools_discovery/libdevtools_discovery.a',
                   '<(libchromiumcontent_dir)/obj/components/devtools_http_handler/libdevtools_http_handler.a',
@@ -151,6 +152,7 @@
                   '<(libchromiumcontent_dir)/obj/net/libhttp_server.a',
                   '<(libchromiumcontent_dir)/obj/third_party/webrtc/modules/desktop_capture/libdesktop_capture.a',
                   '<(libchromiumcontent_dir)/obj/third_party/webrtc/modules/desktop_capture/libdesktop_capture_differ_sse2.a',
+                  '<(libchromiumcontent_dir)/obj/third_party/webrtc/modules/desktop_capture/libprimitives.a',
                   '<(libchromiumcontent_dir)/obj/third_party/webrtc/base/librtc_base.a',
                   '<(libchromiumcontent_dir)/obj/third_party/webrtc/base/librtc_base_approved.a',
                   '<(libchromiumcontent_dir)/obj/third_party/webrtc/libwebrtc_common.a',
