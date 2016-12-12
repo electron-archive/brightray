@@ -227,6 +227,7 @@
                   '-ldxgi.lib',
                   # Following libs are always linked statically.
                   '<(libchromiumcontent_dir)/obj/base/base_static.lib',
+                  '<(libchromiumcontent_dir)/obj/content/sandbox_helper_win.lib',
                   '<(libchromiumcontent_dir)/obj/components/devtools_discovery/devtools_discovery.lib',
                   '<(libchromiumcontent_dir)/obj/components/devtools_http_handler/devtools_http_handler.lib',
                   '<(libchromiumcontent_dir)/obj/components/cdm/renderer/renderer.lib',
@@ -234,6 +235,8 @@
                   '<(libchromiumcontent_dir)/obj/components/os_crypt/os_crypt.lib',
                   '<(libchromiumcontent_dir)/obj/components/security_state/security_state.lib',
                   '<(libchromiumcontent_dir)/obj/net/http_server.lib',
+                  '<(libchromiumcontent_dir)/obj/ppapi/cpp/objects.lib',
+                  '<(libchromiumcontent_dir)/obj/ppapi/cpp/private/internal_module.lib',
                   '<(libchromiumcontent_dir)/obj/sandbox/win/sandbox.lib',
                   '<(libchromiumcontent_dir)/obj/third_party/libyuv/libyuv.lib',
                   '<(libchromiumcontent_dir)/obj/ui/events/dom_keycode_converter.lib',
@@ -248,6 +251,8 @@
                   # Friends of pdf.lib:
                   '<(libchromiumcontent_dir)/obj/pdf/pdf.lib',
                   '<(libchromiumcontent_dir)/obj/third_party/libjpeg_turbo/libjpeg.lib',
+                  '<(libchromiumcontent_dir)/obj/third_party/libjpeg_turbo/simd.lib',
+                  '<(libchromiumcontent_dir)/obj/third_party/libjpeg_turbo/simd_asm.lib',
                   '<(libchromiumcontent_dir)/obj/third_party/pdfium/pdfium.lib',
                   '<(libchromiumcontent_dir)/obj/third_party/pdfium/fdrm.lib',
                   '<(libchromiumcontent_dir)/obj/third_party/pdfium/formfiller.lib',
