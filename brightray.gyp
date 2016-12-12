@@ -318,6 +318,8 @@
                       'secur32.lib',
                       'urlmon.lib',
                       'winhttp.lib',
+                      # ui/gfx/BUILD.gn:
+                      'dwrite.lib',
                     ],
                     'DelayLoadDLLs': [
                       'wtsapi32.dll',
