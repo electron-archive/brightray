@@ -224,6 +224,7 @@
                 'libraries': [
                   # Needed by desktop_capture.lib:
                   '-ld3d11.lib',
+                  '-ldxgi.lib',
                   # Following libs are always linked statically.
                   '<(libchromiumcontent_dir)/base_static.lib',
                   '<(libchromiumcontent_dir)/sandbox.lib',
@@ -279,6 +280,7 @@
                   # content_common.gypi:
                   '-ld3d9.lib',
                   '-ld3d11.lib',
+                  '-ldxgi.lib',
                   '-ldxva2.lib',
                   '-lstrmiids.lib',
                   '-lmf.lib',
