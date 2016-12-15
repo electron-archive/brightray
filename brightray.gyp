@@ -84,7 +84,7 @@
           'conditions': [
             ['libchromiumcontent_component', {
               'variables': {
-                'webrtc_libraries': [
+                'common_webrtc_libraries': [
                   '<(libchromiumcontent_dir)/obj/third_party/webrtc/modules/desktop_capture/libdesktop_capture.a',
                   '<(libchromiumcontent_dir)/obj/third_party/webrtc/modules/desktop_capture/libprimitives.a',
                   '<(libchromiumcontent_dir)/obj/third_party/webrtc/base/librtc_base.a',
@@ -92,7 +92,7 @@
                   '<(libchromiumcontent_dir)/obj/third_party/webrtc/libwebrtc_common.a',
                   '<(libchromiumcontent_dir)/obj/third_party/webrtc/system_wrappers/libsystem_wrappers.a',
                 ],
-                'other_libraries': [
+                'common_libraries': [
                   '<(libchromiumcontent_dir)/obj/chrome/browser/ui/libgtk2ui/libgtk2ui.a',
                   '<(libchromiumcontent_dir)/obj/components/cdm/renderer/librenderer.a',
                   '<(libchromiumcontent_dir)/obj/components/cookie_config/libcookie_config.a',
@@ -106,16 +106,20 @@
                 ],
                 'conditions': [
                   ['target_arch=="arm"', {
-                    'webrtc_platform_libraries': [
+                    'webrtc_libraries': [
+                      '<@(common_webrtc_libraries)',
                     ],
-                    'other_platform_libraries': [
+                    'other_libraries': [
+                      '<@(common_libraries)',
                       '<(libchromiumcontent_dir)/obj/third_party/libyuv/libyuv_neon.a',
                     ],
                   }, {
-                    'webrtc_platform_libraries': [
+                    'webrtc_libraries': [
+                      '<@(common_webrtc_libraries)',
                       '<(libchromiumcontent_dir)/obj/third_party/webrtc/modules/desktop_capture/libdesktop_capture_differ_sse2.a',
                     ],
-                    'other_platform_libraries': [
+                    'other_libraries': [
+                      '<@(common_libraries)',
                     ],
                   }],
                 ],
@@ -129,7 +133,6 @@
                 'ldflags': [
                   '-Wl,--whole-archive',
                   '<(webrtc_libraries)',
-                  '<(webrtc_platform_libraries)',
                   '-Wl,--no-whole-archive',
                 ],
               },
@@ -139,7 +142,6 @@
               'link_settings': {
                 'libraries': [
                   '<(other_libraries)',
-                  '<(other_platform_libraries)',
                 ],
               },
             }, {
