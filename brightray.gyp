@@ -115,6 +115,7 @@
                   '<(libchromiumcontent_dir)/obj/components/os_crypt/libos_crypt.a',
                   '<(libchromiumcontent_dir)/obj/net/libhttp_server.a',
                   '<(libchromiumcontent_dir)/obj/third_party/libyuv/libyuv.a',
+                  '<(libchromiumcontent_dir)/obj/ui/events/libdom_keycode_converter.a',
                 ],
               },
             }, {
@@ -173,6 +174,7 @@
                   '<(libchromiumcontent_dir)/obj/third_party/webrtc/libwebrtc_common.a',
                   '<(libchromiumcontent_dir)/obj/third_party/webrtc/system_wrappers/libsystem_wrappers.a',
                   '<(libchromiumcontent_dir)/obj/third_party/libyuv/libyuv.a',
+                  '<(libchromiumcontent_dir)/obj/ui/events/libdom_keycode_converter.a',
                 ],
               },
             }, {
