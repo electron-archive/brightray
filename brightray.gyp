@@ -229,7 +229,7 @@
                   '-ldxgi.lib',
                   # Following libs are always linked statically.
                   '<(libchromiumcontent_dir)/obj/base/base_static.lib',
-                  '<(libchromiumcontent_dir)/obj/content/sandbox_helper_win.lib',
+                  '<(libchromiumcontent_dir)/obj/chromiumcontent/sandbox_helper_win.lib',
                   '<(libchromiumcontent_dir)/obj/components/devtools_discovery/devtools_discovery.lib',
                   '<(libchromiumcontent_dir)/obj/components/devtools_http_handler/devtools_http_handler.lib',
                   '<(libchromiumcontent_dir)/obj/components/cdm/renderer/renderer.lib',
