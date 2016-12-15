@@ -83,29 +83,16 @@
           },
           'conditions': [
             ['libchromiumcontent_component', {
-              # The webrtc libraries have to linked with all symbols included,
-              # otherwise the linker may leave some symbols behind and cause
-              # linking errors.
-              # Note(zcbenz): I believe this is a bug of the linker, since we
-              # do not have this problem on Mac.
-              'direct_dependent_settings': {
-                'ldflags': [
-                  '-Wl,--whole-archive',
+              'variables': {
+                'webrtc_libraries': [
                   '<(libchromiumcontent_dir)/obj/third_party/webrtc/modules/desktop_capture/libdesktop_capture.a',
-                  '<(libchromiumcontent_dir)/obj/third_party/webrtc/modules/desktop_capture/libdesktop_capture_differ_sse2.a',
                   '<(libchromiumcontent_dir)/obj/third_party/webrtc/modules/desktop_capture/libprimitives.a',
                   '<(libchromiumcontent_dir)/obj/third_party/webrtc/base/librtc_base.a',
                   '<(libchromiumcontent_dir)/obj/third_party/webrtc/base/librtc_base_approved.a',
                   '<(libchromiumcontent_dir)/obj/third_party/webrtc/libwebrtc_common.a',
                   '<(libchromiumcontent_dir)/obj/third_party/webrtc/system_wrappers/libsystem_wrappers.a',
-                  '-Wl,--no-whole-archive',
                 ],
-              },
-              # For other static libraries just do normal linking.
-              # Note(zcbenz): Putting some of the following under whole-archive
-              # would cause missing symbols error, why?
-              'link_settings': {
-                'libraries': [
+                'other_libraries': [
                   '<(libchromiumcontent_dir)/obj/chrome/browser/ui/libgtk2ui/libgtk2ui.a',
                   '<(libchromiumcontent_dir)/obj/components/cdm/renderer/librenderer.a',
                   '<(libchromiumcontent_dir)/obj/components/cookie_config/libcookie_config.a',
@@ -116,6 +103,37 @@
                   '<(libchromiumcontent_dir)/obj/net/libhttp_server.a',
                   '<(libchromiumcontent_dir)/obj/third_party/libyuv/libyuv.a',
                   '<(libchromiumcontent_dir)/obj/ui/events/libdom_keycode_converter.a',
+                ],
+                'conditions': [
+                  ['target_arch=="arm"', {
+                    'x86_webrtc_libraries': [
+                    ],
+                  }, {
+                    'x86_webrtc_libraries': [
+                      '<(libchromiumcontent_dir)/obj/third_party/webrtc/modules/desktop_capture/libdesktop_capture_differ_sse2.a',
+                    ],
+                  }],
+                ],
+              },
+              # The webrtc libraries have to linked with all symbols included,
+              # otherwise the linker may leave some symbols behind and cause
+              # linking errors.
+              # Note(zcbenz): I believe this is a bug of the linker, since we
+              # do not have this problem on Mac.
+              'direct_dependent_settings': {
+                'ldflags': [
+                  '-Wl,--whole-archive',
+                  '<(webrtc_libraries)',
+                  '<(x86_webrtc_libraries)',
+                  '-Wl,--no-whole-archive',
+                ],
+              },
+              # For other static libraries just do normal linking.
+              # Note(zcbenz): Putting some of the following under whole-archive
+              # would cause missing symbols error, why?
+              'link_settings': {
+                'libraries': [
+                  '<(other_libraries)',
                 ],
               },
             }, {
@@ -133,13 +151,6 @@
                   '-lfontconfig',
                   '-lfreetype',
                   '-lexpat',
-                ],
-              },
-            }],
-            ['target_arch=="arm"', {
-              'link_settings': {
-                'libraries!': [
-                  '<(libchromiumcontent_dir)/obj/third_party/webrtc/modules/desktop_capture/libdesktop_capture_differ_sse2.a',
                 ],
               },
             }],
