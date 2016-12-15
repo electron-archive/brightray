@@ -106,11 +106,16 @@
                 ],
                 'conditions': [
                   ['target_arch=="arm"', {
-                    'x86_webrtc_libraries': [
+                    'webrtc_platform_libraries': [
+                    ],
+                    'other_platform_libraries': [
+                      '<(libchromiumcontent_dir)/obj/third_party/libyuv/libyuv_neon.a',
                     ],
                   }, {
-                    'x86_webrtc_libraries': [
+                    'webrtc_platform_libraries': [
                       '<(libchromiumcontent_dir)/obj/third_party/webrtc/modules/desktop_capture/libdesktop_capture_differ_sse2.a',
+                    ],
+                    'other_platform_libraries': [
                     ],
                   }],
                 ],
@@ -124,7 +129,7 @@
                 'ldflags': [
                   '-Wl,--whole-archive',
                   '<(webrtc_libraries)',
-                  '<(x86_webrtc_libraries)',
+                  '<(webrtc_platform_libraries)',
                   '-Wl,--no-whole-archive',
                 ],
               },
@@ -134,6 +139,7 @@
               'link_settings': {
                 'libraries': [
                   '<(other_libraries)',
+                  '<(other_platform_libraries)',
                 ],
               },
             }, {
