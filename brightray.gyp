@@ -83,23 +83,65 @@
           },
           'conditions': [
             ['libchromiumcontent_component', {
+              'variables': {
+                'common_webrtc_libraries': [
+                  '<(libchromiumcontent_dir)/obj/third_party/webrtc/modules/desktop_capture/libdesktop_capture.a',
+                  '<(libchromiumcontent_dir)/obj/third_party/webrtc/modules/desktop_capture/libprimitives.a',
+                  '<(libchromiumcontent_dir)/obj/third_party/webrtc/base/librtc_base.a',
+                  '<(libchromiumcontent_dir)/obj/third_party/webrtc/base/librtc_base_approved.a',
+                  '<(libchromiumcontent_dir)/obj/third_party/webrtc/libwebrtc_common.a',
+                  '<(libchromiumcontent_dir)/obj/third_party/webrtc/system_wrappers/libsystem_wrappers.a',
+                ],
+                'common_libraries': [
+                  '<(libchromiumcontent_dir)/obj/chrome/browser/ui/libgtk2ui/libgtk2ui.a',
+                  '<(libchromiumcontent_dir)/obj/components/cdm/renderer/librenderer.a',
+                  '<(libchromiumcontent_dir)/obj/components/cookie_config/libcookie_config.a',
+                  '<(libchromiumcontent_dir)/obj/components/devtools_discovery/libdevtools_discovery.a',
+                  '<(libchromiumcontent_dir)/obj/components/devtools_http_handler/libdevtools_http_handler.a',
+                  '<(libchromiumcontent_dir)/obj/components/security_state/libsecurity_state.a',
+                  '<(libchromiumcontent_dir)/obj/components/os_crypt/libos_crypt.a',
+                  '<(libchromiumcontent_dir)/obj/net/libhttp_server.a',
+                  '<(libchromiumcontent_dir)/obj/third_party/libyuv/libyuv.a',
+                  '<(libchromiumcontent_dir)/obj/ui/events/libdom_keycode_converter.a',
+                ],
+                'conditions': [
+                  ['target_arch=="arm"', {
+                    'webrtc_libraries': [
+                      '<@(common_webrtc_libraries)',
+                    ],
+                    'other_libraries': [
+                      '<@(common_libraries)',
+                      '<(libchromiumcontent_dir)/obj/third_party/libyuv/libyuv_neon.a',
+                    ],
+                  }, {
+                    'webrtc_libraries': [
+                      '<@(common_webrtc_libraries)',
+                      '<(libchromiumcontent_dir)/obj/third_party/webrtc/modules/desktop_capture/libdesktop_capture_differ_sse2.a',
+                    ],
+                    'other_libraries': [
+                      '<@(common_libraries)',
+                    ],
+                  }],
+                ],
+              },
+              # The webrtc libraries have to linked with all symbols included,
+              # otherwise the linker may leave some symbols behind and cause
+              # linking errors.
+              # Note(zcbenz): I believe this is a bug of the linker, since we
+              # do not have this problem on Mac.
+              'direct_dependent_settings': {
+                'ldflags': [
+                  '-Wl,--whole-archive',
+                  '<(webrtc_libraries)',
+                  '-Wl,--no-whole-archive',
+                ],
+              },
+              # For other static libraries just do normal linking.
+              # Note(zcbenz): Putting some of the following under whole-archive
+              # would cause missing symbols error, why?
               'link_settings': {
                 'libraries': [
-                  # Following libraries are always linked statically.
-                  '<(libchromiumcontent_dir)/libgtk2ui.a',
-                  '<(libchromiumcontent_dir)/libdevtools_discovery.a',
-                  '<(libchromiumcontent_dir)/libdevtools_http_handler.a',
-                  '<(libchromiumcontent_dir)/libhttp_server.a',
-                  '<(libchromiumcontent_dir)/libdesktop_capture.a',
-                  '<(libchromiumcontent_dir)/libdesktop_capture_differ_sse2.a',
-                  '<(libchromiumcontent_dir)/libdom_keycode_converter.a',
-                  '<(libchromiumcontent_dir)/libsystem_wrappers.a',
-                  '<(libchromiumcontent_dir)/librtc_base.a',
-                  '<(libchromiumcontent_dir)/librtc_base_approved.a',
-                  '<(libchromiumcontent_dir)/libwebrtc_common.a',
-                  '<(libchromiumcontent_dir)/libyuv.a',
-                  '<(libchromiumcontent_dir)/libcdm_renderer.a',
-                  '<(libchromiumcontent_dir)/libsecurity_state.a',
+                  '<(other_libraries)',
                 ],
               },
             }, {
@@ -120,13 +162,6 @@
                 ],
               },
             }],
-            ['target_arch=="arm"', {
-              'link_settings': {
-                'libraries!': [
-                  '<(libchromiumcontent_dir)/libdesktop_capture_differ_sse2.a',
-                ],
-              },
-            }],
           ],
         }],  # OS=="linux"
         ['OS=="mac"', {
@@ -143,19 +178,22 @@
               'link_settings': {
                 'libraries': [
                   # Following libraries are always linked statically.
-                  '<(libchromiumcontent_dir)/libdevtools_discovery.a',
-                  '<(libchromiumcontent_dir)/libdevtools_http_handler.a',
-                  '<(libchromiumcontent_dir)/libhttp_server.a',
-                  '<(libchromiumcontent_dir)/libdesktop_capture.a',
-                  '<(libchromiumcontent_dir)/libdesktop_capture_differ_sse2.a',
-                  '<(libchromiumcontent_dir)/libdom_keycode_converter.a',
-                  '<(libchromiumcontent_dir)/librtc_base.a',
-                  '<(libchromiumcontent_dir)/librtc_base_approved.a',
-                  '<(libchromiumcontent_dir)/libsystem_wrappers.a',
-                  '<(libchromiumcontent_dir)/libwebrtc_common.a',
-                  '<(libchromiumcontent_dir)/libyuv.a',
-                  '<(libchromiumcontent_dir)/libcdm_renderer.a',
-                  '<(libchromiumcontent_dir)/libsecurity_state.a',
+                  '<(libchromiumcontent_dir)/obj/components/cdm/renderer/librenderer.a',
+                  '<(libchromiumcontent_dir)/obj/components/cookie_config/libcookie_config.a',
+                  '<(libchromiumcontent_dir)/obj/components/devtools_discovery/libdevtools_discovery.a',
+                  '<(libchromiumcontent_dir)/obj/components/devtools_http_handler/libdevtools_http_handler.a',
+                  '<(libchromiumcontent_dir)/obj/components/security_state/libsecurity_state.a',
+                  '<(libchromiumcontent_dir)/obj/components/os_crypt/libos_crypt.a',
+                  '<(libchromiumcontent_dir)/obj/net/libhttp_server.a',
+                  '<(libchromiumcontent_dir)/obj/third_party/webrtc/modules/desktop_capture/libdesktop_capture.a',
+                  '<(libchromiumcontent_dir)/obj/third_party/webrtc/modules/desktop_capture/libdesktop_capture_differ_sse2.a',
+                  '<(libchromiumcontent_dir)/obj/third_party/webrtc/modules/desktop_capture/libprimitives.a',
+                  '<(libchromiumcontent_dir)/obj/third_party/webrtc/base/librtc_base.a',
+                  '<(libchromiumcontent_dir)/obj/third_party/webrtc/base/librtc_base_approved.a',
+                  '<(libchromiumcontent_dir)/obj/third_party/webrtc/libwebrtc_common.a',
+                  '<(libchromiumcontent_dir)/obj/third_party/webrtc/system_wrappers/libsystem_wrappers.a',
+                  '<(libchromiumcontent_dir)/obj/third_party/libyuv/libyuv.a',
+                  '<(libchromiumcontent_dir)/obj/ui/events/libdom_keycode_converter.a',
                 ],
               },
             }, {
@@ -187,12 +225,14 @@
                   '$(SDKROOT)/System/Library/Frameworks/ApplicationServices.framework',
                   '$(SDKROOT)/System/Library/Frameworks/Carbon.framework',
                   '$(SDKROOT)/System/Library/Frameworks/CoreFoundation.framework',
+                  # bluetooth.gyp:
+                  '$(SDKROOT)/System/Library/Frameworks/IOBluetooth.framework',
+                  # device/gamepad/BUILD.gn:
+                  '$(SDKROOT)/System/Library/Frameworks/GameController.framework',
                   # content_browser.gypi:
                   '-lbsm',
                   # content_common.gypi:
                   '-lsandbox',
-                  # bluetooth.gyp:
-                  '$(SDKROOT)/System/Library/Frameworks/IOBluetooth.framework',
                 ],
               },
             }],
@@ -205,47 +245,55 @@
                 'libraries': [
                   # Needed by desktop_capture.lib:
                   '-ld3d11.lib',
+                  '-ldxgi.lib',
                   # Following libs are always linked statically.
-                  '<(libchromiumcontent_dir)/base_static.lib',
-                  '<(libchromiumcontent_dir)/sandbox.lib',
-                  '<(libchromiumcontent_dir)/sandbox_helper_win.lib',
-                  '<(libchromiumcontent_dir)/devtools_discovery.lib',
-                  '<(libchromiumcontent_dir)/devtools_http_handler.lib',
-                  '<(libchromiumcontent_dir)/http_server.lib',
-                  '<(libchromiumcontent_dir)/desktop_capture.lib',
-                  '<(libchromiumcontent_dir)/desktop_capture_differ_sse2.lib',
-                  '<(libchromiumcontent_dir)/dom_keycode_converter.lib',
-                  '<(libchromiumcontent_dir)/rtc_base.lib',
-                  '<(libchromiumcontent_dir)/rtc_base_approved.lib',
-                  '<(libchromiumcontent_dir)/system_wrappers.lib',
-                  '<(libchromiumcontent_dir)/webrtc_common.lib',
-                  '<(libchromiumcontent_dir)/libyuv.lib',
-                  '<(libchromiumcontent_dir)/cdm_renderer.lib',
-                  '<(libchromiumcontent_dir)/security_state.lib',
+                  '<(libchromiumcontent_dir)/obj/base/base_static.lib',
+                  '<(libchromiumcontent_dir)/obj/chromiumcontent/sandbox_helper_win.lib',
+                  '<(libchromiumcontent_dir)/obj/components/devtools_discovery/devtools_discovery.lib',
+                  '<(libchromiumcontent_dir)/obj/components/devtools_http_handler/devtools_http_handler.lib',
+                  '<(libchromiumcontent_dir)/obj/components/cdm/renderer/renderer.lib',
+                  '<(libchromiumcontent_dir)/obj/components/cookie_config/cookie_config.lib',
+                  '<(libchromiumcontent_dir)/obj/components/os_crypt/os_crypt.lib',
+                  '<(libchromiumcontent_dir)/obj/components/security_state/security_state.lib',
+                  '<(libchromiumcontent_dir)/obj/net/http_server.lib',
+                  '<(libchromiumcontent_dir)/obj/ppapi/cpp/objects.lib',
+                  '<(libchromiumcontent_dir)/obj/ppapi/cpp/private/internal_module.lib',
+                  '<(libchromiumcontent_dir)/obj/sandbox/win/sandbox.lib',
+                  '<(libchromiumcontent_dir)/obj/third_party/libyuv/libyuv.lib',
+                  '<(libchromiumcontent_dir)/obj/ui/events/dom_keycode_converter.lib',
+                  # Webrtc libraries:
+                  '<(libchromiumcontent_dir)/obj/third_party/webrtc/base/rtc_base.lib',
+                  '<(libchromiumcontent_dir)/obj/third_party/webrtc/base/rtc_base_approved.lib',
+                  '<(libchromiumcontent_dir)/obj/third_party/webrtc/modules/desktop_capture/desktop_capture.lib',
+                  '<(libchromiumcontent_dir)/obj/third_party/webrtc/modules/desktop_capture/desktop_capture_differ_sse2.lib',
+                  '<(libchromiumcontent_dir)/obj/third_party/webrtc/modules/desktop_capture/primitives.lib',
+                  '<(libchromiumcontent_dir)/obj/third_party/webrtc/system_wrappers/system_wrappers.lib',
+                  '<(libchromiumcontent_dir)/obj/third_party/webrtc/webrtc_common.lib',
                   # Friends of pdf.lib:
-                  '<(libchromiumcontent_dir)/pdf.lib',
-                  '<(libchromiumcontent_dir)/ppapi_cpp_objects.lib',
-                  '<(libchromiumcontent_dir)/ppapi_internal_module.lib',
-                  '<(libchromiumcontent_dir)/libjpeg.lib',
-                  '<(libchromiumcontent_dir)/pdfium.lib',
-                  '<(libchromiumcontent_dir)/fdrm.lib',
-                  '<(libchromiumcontent_dir)/formfiller.lib',
-                  '<(libchromiumcontent_dir)/fpdfapi.lib',
-                  '<(libchromiumcontent_dir)/fpdfdoc.lib',
-                  '<(libchromiumcontent_dir)/fpdftext.lib',
-                  '<(libchromiumcontent_dir)/fpdftext.lib',
-                  '<(libchromiumcontent_dir)/fxcodec.lib',
-                  '<(libchromiumcontent_dir)/fxcrt.lib',
-                  '<(libchromiumcontent_dir)/fxedit.lib',
-                  '<(libchromiumcontent_dir)/fxge.lib',
-                  '<(libchromiumcontent_dir)/javascript.lib',
-                  '<(libchromiumcontent_dir)/pdfwindow.lib',
-                  '<(libchromiumcontent_dir)/bigint.lib',
-                  '<(libchromiumcontent_dir)/fx_agg.lib',
-                  '<(libchromiumcontent_dir)/fx_freetype.lib',
-                  '<(libchromiumcontent_dir)/fx_lcms2.lib',
-                  '<(libchromiumcontent_dir)/fx_libopenjpeg.lib',
-                  '<(libchromiumcontent_dir)/fx_zlib.lib',
+                  '<(libchromiumcontent_dir)/obj/pdf/pdf.lib',
+                  '<(libchromiumcontent_dir)/obj/third_party/libjpeg_turbo/libjpeg.lib',
+                  '<(libchromiumcontent_dir)/obj/third_party/libjpeg_turbo/simd.lib',
+                  '<(libchromiumcontent_dir)/obj/third_party/libjpeg_turbo/simd_asm.lib',
+                  '<(libchromiumcontent_dir)/obj/third_party/pdfium/pdfium.lib',
+                  '<(libchromiumcontent_dir)/obj/third_party/pdfium/fdrm.lib',
+                  '<(libchromiumcontent_dir)/obj/third_party/pdfium/formfiller.lib',
+                  '<(libchromiumcontent_dir)/obj/third_party/pdfium/fpdfapi.lib',
+                  '<(libchromiumcontent_dir)/obj/third_party/pdfium/fpdfdoc.lib',
+                  '<(libchromiumcontent_dir)/obj/third_party/pdfium/fpdftext.lib',
+                  '<(libchromiumcontent_dir)/obj/third_party/pdfium/fpdftext.lib',
+                  '<(libchromiumcontent_dir)/obj/third_party/pdfium/fxcodec.lib',
+                  '<(libchromiumcontent_dir)/obj/third_party/pdfium/fxcrt.lib',
+                  '<(libchromiumcontent_dir)/obj/third_party/pdfium/fxedit.lib',
+                  '<(libchromiumcontent_dir)/obj/third_party/pdfium/fxge.lib',
+                  '<(libchromiumcontent_dir)/obj/third_party/pdfium/fxjs.lib',
+                  '<(libchromiumcontent_dir)/obj/third_party/pdfium/javascript.lib',
+                  '<(libchromiumcontent_dir)/obj/third_party/pdfium/pdfwindow.lib',
+                  '<(libchromiumcontent_dir)/obj/third_party/pdfium/third_party/bigint.lib',
+                  '<(libchromiumcontent_dir)/obj/third_party/pdfium/third_party/fx_agg.lib',
+                  '<(libchromiumcontent_dir)/obj/third_party/pdfium/third_party/fx_freetype.lib',
+                  '<(libchromiumcontent_dir)/obj/third_party/pdfium/third_party/fx_lcms2.lib',
+                  '<(libchromiumcontent_dir)/obj/third_party/pdfium/third_party/fx_libopenjpeg.lib',
+                  '<(libchromiumcontent_dir)/obj/third_party/pdfium/third_party/fx_zlib.lib',
                 ],
               },
             }, {
@@ -260,6 +308,7 @@
                   # content_common.gypi:
                   '-ld3d9.lib',
                   '-ld3d11.lib',
+                  '-ldxgi.lib',
                   '-ldxva2.lib',
                   '-lstrmiids.lib',
                   '-lmf.lib',
@@ -299,6 +348,8 @@
                       'secur32.lib',
                       'urlmon.lib',
                       'winhttp.lib',
+                      # ui/gfx/BUILD.gn:
+                      'dwrite.lib',
                     ],
                     'DelayLoadDLLs': [
                       'wtsapi32.dll',
