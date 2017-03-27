@@ -240,7 +240,14 @@ InspectableWebContentsImpl::InspectableWebContentsImpl(
 }
 
 InspectableWebContentsImpl::~InspectableWebContentsImpl() {
-  Observe(nullptr);
+  // Unsubscribe from devtools and Clean up resources.
+  if (devtools_web_contents_) {
+    devtools_web_contents_->SetDelegate(nullptr);
+    // Calling this also unsubscribes the observer, so WebContentsDestroyed
+    // won't be called again.
+    WebContentsDestroyed();
+  }
+  // Let destructor destroy devtools_web_contents_.
 }
 
 InspectableWebContentsView* InspectableWebContentsImpl::GetView() const {
@@ -662,6 +669,7 @@ void InspectableWebContentsImpl::RenderFrameHostChanged(
 
 void InspectableWebContentsImpl::WebContentsDestroyed() {
   frontend_loaded_ = false;
+  Observe(nullptr);
   Detach();
 
   for (const auto& pair : pending_requests_)
@@ -704,6 +712,7 @@ void InspectableWebContentsImpl::HandleKeyboardEvent(
 }
 
 void InspectableWebContentsImpl::CloseContents(content::WebContents* source) {
+  // This is where the devtools closes itself (by clicking the x button).
   CloseDevTools();
 }
 
