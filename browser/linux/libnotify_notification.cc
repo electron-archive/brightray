@@ -33,7 +33,7 @@ bool HasCapability(const std::string& capability) {
 
 bool NotifierSupportsActions() {
   if (getenv("ELECTRON_USE_UBUNTU_NOTIFIER"))
-    return false;
+    return true;
 
   static bool notify_has_result = false;
   static bool notify_result = false;
