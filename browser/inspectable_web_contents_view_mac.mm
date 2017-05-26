@@ -27,6 +27,9 @@ gfx::NativeView InspectableWebContentsViewMac::GetNativeView() const {
   return view_.get();
 }
 
+void InspectableWebContentsViewMac::InstallWebContentsView() {
+}
+
 void InspectableWebContentsViewMac::ShowDevTools() {
   [view_ setDevToolsVisible:YES];
 }

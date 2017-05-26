@@ -162,6 +162,10 @@ bool InspectableWebContentsViewViews::IsDevToolsViewFocused() {
     return false;
 }
 
+void InspectableWebContentsViewViews::InstallWebContentsView() {
+  contents_web_view_->SetWebContents(inspectable_web_contents_->GetWebContents());
+}
+
 void InspectableWebContentsViewViews::SetIsDocked(bool docked) {
   CloseDevTools();
 
